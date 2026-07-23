@@ -1,0 +1,43 @@
+.item {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 0 6px 6px 0;
+  font-size: 12px;
+}
+
+.danger {
+  border-left: 3px solid var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.warning {
+  border-left: 3px solid var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.success {
+  border-left: 3px solid var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.title {
+  font-weight: 500;
+}
+
+.titleDanger {
+  color: var(--color-danger);
+}
+
+.titleWarning {
+  color: var(--color-warning);
+}
+
+.titleSuccess {
+  color: var(--color-success);
+}
+
+.detail {
+  color: var(--text-secondary);
+  margin-top: 2px;
+  font-size: 11px;
+}

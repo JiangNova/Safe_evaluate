@@ -1,0 +1,50 @@
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.cardSuccess {
+  border-top: 3px solid var(--color-success);
+}
+
+.cardDanger {
+  border-top: 3px solid var(--color-danger);
+}
+
+.cardWarning {
+  border-top: 3px solid var(--color-warning);
+}
+
+.label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.value {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.valueSuccess {
+  color: var(--color-success);
+}
+
+.valueDanger {
+  color: var(--color-danger);
+}
+
+.valueWarning {
+  color: var(--color-warning);
+}
+
+.desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
