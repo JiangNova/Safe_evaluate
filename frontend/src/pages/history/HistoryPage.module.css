@@ -1,0 +1,124 @@
+.header {
+  margin-bottom: 18px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.table {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-card);
+  background: #fafbfc;
+  font-weight: 500;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  font-size: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  align-items: center;
+}
+
+.row:hover {
+  background: var(--color-primary-light);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.badge {
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.badgeLow {
+  color: var(--color-success);
+}
+
+.badgeMedium {
+  color: var(--color-warning);
+}
+
+.badgeHigh {
+  color: var(--color-danger);
+}
+
+.viewLink {
+  color: var(--color-primary);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.viewLink:hover {
+  text-decoration: underline;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 16px;
+  font-size: 12px;
+}
+
+.pageBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.pageBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.pageActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.error {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
