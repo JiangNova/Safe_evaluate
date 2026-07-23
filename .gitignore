@@ -223,3 +223,9 @@ __marimo__/
 # Node
 node_modules/
 frontend/dist/
+
+# App data
+backend/data/
+
+# Requirement docs (local only)
+requirement/

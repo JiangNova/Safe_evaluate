@@ -50,21 +50,53 @@
   margin-top: 8px;
 }
 
-.fileInfo {
-  font-size: 13px;
-  color: var(--color-primary);
-  font-weight: 500;
-  margin-top: 8px;
+/* File list */
+.fileList {
+  margin-top: 12px;
+  text-align: left;
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 6px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.fileName {
+  flex: 1;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileSize {
+  color: var(--text-muted);
+  font-size: 10px;
+  flex-shrink: 0;
 }
 
 .removeBtn {
-  font-size: 11px;
+  font-size: 14px;
   color: var(--color-danger);
-  margin-top: 8px;
   cursor: pointer;
-  display: inline-block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 .removeBtn:hover {
-  text-decoration: underline;
+  background: #fee2e2;
 }

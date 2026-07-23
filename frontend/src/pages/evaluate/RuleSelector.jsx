@@ -2,10 +2,14 @@ import { useState } from 'react';
 import styles from './RuleSelector.module.css';
 
 const DEFAULT_RULES = [
+  { id: 'fire_law', label: '中华人民共和国消防法' },
+  { id: 'gb35181', label: 'GB 35181-2025 重大火灾隐患判定规则' },
+  { id: 'supervision_reg', label: '消防监督检查规定（公安部120号令）' },
+  { id: 'cs_standard', label: '长沙市派出所消防重点监督对象界定标准' },
+  { id: 'hn_standard', label: '湖南省消防安全重点单位界定标准' },
   { id: 'gb50016', label: 'GB 50016 建筑设计防火规范' },
   { id: 'gb50116', label: 'GB 50116 火灾自动报警系统设计规范' },
   { id: 'gb50974', label: 'GB 50974 消防给水及消火栓系统规范' },
-  { id: 'ga653', label: 'GA 653 人员密集场所消防安全管理' },
 ];
 
 export default function RuleSelector({ selected, onChange }) {
