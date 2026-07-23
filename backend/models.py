@@ -1,8 +1,10 @@
 """Pydantic models for API request/response schemas."""
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, Literal
 from datetime import datetime
 
+
+# ===== Auth =====
 
 class LoginRequest(BaseModel):
     username: str
@@ -14,8 +16,22 @@ class LoginResponse(BaseModel):
     user: dict
 
 
+# ===== Evaluate =====
+
 class EvaluateResponse(BaseModel):
     report_id: str
+
+
+# ===== Finding & Report =====
+
+FINDING_CATEGORIES = {
+    "fire_exit": "消防通道与疏散",
+    "equipment": "消防设施与器材",
+    "electrical": "电气与火源管理",
+    "management": "消防安全管理",
+    "building": "建筑与场所属性",
+    "other": "其他",
+}
 
 
 class StatSummary(BaseModel):
@@ -26,6 +42,7 @@ class StatSummary(BaseModel):
 
 class Finding(BaseModel):
     severity: str  # "danger" | "warning" | "success"
+    category: str = "other"  # fire_exit | equipment | electrical | management | building | other
     title: str
     detail: str
     regulation_ref: Optional[str] = None
@@ -56,3 +73,71 @@ class HistoryResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+# ===== Rules =====
+
+class Rule(BaseModel):
+    id: str
+    name: str
+    category: str  # fire_exit | equipment | electrical | management | building | other
+    description: str = ""
+    source_doc: str = ""  # which requirement doc this rule comes from
+    clause: str = ""  # specific clause number
+    is_custom: bool = False  # user-created vs system-built-in
+
+
+class RuleCreate(BaseModel):
+    name: str
+    category: str = "other"
+    description: str = ""
+    source_doc: str = ""
+    clause: str = ""
+
+
+class RuleUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    source_doc: Optional[str] = None
+    clause: Optional[str] = None
+
+
+# ===== Statistics =====
+
+class StatsOverview(BaseModel):
+    total_reports: int
+    total_findings: int
+    total_compliant: int
+    total_non_compliant: int
+    total_suggestions: int
+    compliance_rate: float  # 0-100
+    risk_distribution: dict  # {"low": N, "medium": N, "high": N}
+
+
+class CategoryStat(BaseModel):
+    category: str
+    label: str
+    non_compliant_count: int
+    percentage: float  # 0-100
+
+
+class TopIssue(BaseModel):
+    title: str
+    count: int
+    category: str
+
+
+class TrendPoint(BaseModel):
+    period: str  # "2026-07" etc.
+    total: int
+    compliant: int
+    non_compliant: int
+    compliance_rate: float
+
+
+class StatsResponse(BaseModel):
+    overview: StatsOverview
+    by_category: list[CategoryStat] = []
+    top_issues: list[TopIssue] = []
+    trends: list[TrendPoint] = []

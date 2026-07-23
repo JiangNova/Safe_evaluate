@@ -43,6 +43,7 @@ export function loginApi(username, password) {
 export function submitEvaluation(formData) {
   return api.post('/evaluate', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000,  // 5 min — covers retry + fallback cycles
   });
 }
 
@@ -54,4 +55,26 @@ export function getReport(id) {
 // ===== History APIs =====
 export function getHistoryList(page = 1, pageSize = 10) {
   return api.get('/reports', { params: { page, page_size: pageSize } });
+}
+
+// ===== Rules APIs =====
+export function getRules(category = '') {
+  return api.get('/rules', { params: { category } });
+}
+
+export function createRule(data) {
+  return api.post('/rules', data);
+}
+
+export function updateRule(id, data) {
+  return api.put(`/rules/${id}`, data);
+}
+
+export function deleteRule(id) {
+  return api.delete(`/rules/${id}`);
+}
+
+// ===== Stats APIs =====
+export function getStats() {
+  return api.get('/stats');
 }

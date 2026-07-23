@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UploadZone from './UploadZone';
+import RuleSelector from './RuleSelector';
 import Button from '../../components/ui/Button';
 import Loading from '../../components/ui/Loading';
 import { submitEvaluation } from '../../services/api';
@@ -8,6 +9,7 @@ import styles from './EvaluatePage.module.css';
 
 export default function EvaluatePage() {
   const [files, setFiles] = useState([]);
+  const [selectedRules, setSelectedRules] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export default function EvaluatePage() {
     try {
       const formData = new FormData();
       files.forEach((f) => formData.append('files', f));
+      formData.append('rules', JSON.stringify(selectedRules));
 
       const res = await submitEvaluation(formData);
       navigate(`/report/${res.data.report_id}`);
@@ -36,7 +39,7 @@ export default function EvaluatePage() {
 
   return (
     <div>
-      {isSubmitting && <Loading text="正在分析评估中，预计 30-60 秒..." />}
+      {isSubmitting && <Loading text="正在分析评估中，预计 1-3 分钟（含自动重试）..." />}
 
       <div className={styles.header}>
         <h1 className={styles.title}>新建消防安全评估</h1>
@@ -49,17 +52,25 @@ export default function EvaluatePage() {
         <div className={styles.errorBanner}>{error}</div>
       )}
 
-      <UploadZone files={files} onFilesChange={setFiles} />
+      <div className={styles.columns}>
+        <div className={styles.mainCol}>
+          <UploadZone files={files} onFilesChange={setFiles} />
 
-      <div className={styles.footer}>
-        <span className={styles.estimate}>
-          {files.length > 0
-            ? `已选择 ${files.length} 个文件，评估将调用 AI 模型进行分析，预计耗时 60-90 秒`
-            : '评估将调用 AI 模型依据消防法规进行分析'}
-        </span>
-        <Button onClick={handleSubmit} disabled={isSubmitting}>
-          开始评估
-        </Button>
+          <div className={styles.footer}>
+            <span className={styles.estimate}>
+              {files.length > 0
+                ? `已选择 ${files.length} 个文件，评估将调用 AI 模型进行分析，预计耗时 1-3 分钟（含自动重试）`
+                : '评估将调用 AI 模型依据消防法规进行分析'}
+            </span>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              开始评估
+            </Button>
+          </div>
+        </div>
+
+        <div className={styles.sideCol}>
+          <RuleSelector selected={selectedRules} onChange={setSelectedRules} />
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import EvaluatePage from './pages/evaluate/EvaluatePage';
 import ReportPage from './pages/report/ReportPage';
 import HistoryPage from './pages/history/HistoryPage';
+import RulesPage from './pages/rules/RulesPage';
+import StatsPage from './pages/stats/StatsPage';
 
 export default function App() {
   return (
@@ -20,8 +22,8 @@ export default function App() {
         <Route path="/evaluate" element={<EvaluatePage />} />
         <Route path="/report/:id" element={<ReportPage />} />
         <Route path="/history" element={<HistoryPage />} />
-        <Route path="/rules" element={<div style={{ padding: 24, color: 'var(--text-secondary)' }}>规则管理（开发中）</div>} />
-        <Route path="/stats" element={<div style={{ padding: 24, color: 'var(--text-secondary)' }}>统计分析（开发中）</div>} />
+        <Route path="/rules" element={<RulesPage />} />
+        <Route path="/stats" element={<StatsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/evaluate" replace />} />
     </Routes>

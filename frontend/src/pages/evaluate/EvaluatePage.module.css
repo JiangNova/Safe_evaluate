@@ -25,6 +25,23 @@
   margin-bottom: 16px;
 }
 
+/* Two-column evaluate layout */
+.columns {
+  display: flex;
+  gap: var(--spacing-xl);
+  align-items: flex-start;
+}
+
+.mainCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.sideCol {
+  width: 280px;
+  flex-shrink: 0;
+}
+
 .footer {
   margin-top: 24px;
   display: flex;
@@ -35,4 +52,13 @@
 .estimate {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .columns {
+    flex-direction: column;
+  }
+  .sideCol {
+    width: 100%;
+  }
 }

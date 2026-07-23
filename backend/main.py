@@ -1,5 +1,7 @@
 """FastAPI application — Fire Safety Evaluation System backend."""
 import json
+import os
+import sys
 import traceback
 from datetime import datetime
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends, Query
@@ -16,11 +18,17 @@ from .models import (
     LoginResponse,
     EvaluateResponse,
     HistoryResponse,
+    Rule,
+    RuleCreate,
+    RuleUpdate,
+    StatsResponse,
 )
 from .auth import authenticate, verify_token
 from .database import save_report, get_report, list_reports
 from .document_parser import load_all_requirements, build_requirements_context
 from .evaluator import evaluate_images
+from .rules_store import list_rules, create_rule, update_rule, delete_rule
+from .stats_service import get_all_stats
 
 app = FastAPI(title="SafeEvaluate API", version="1.0.0")
 
@@ -127,11 +135,18 @@ async def submit_evaluation(
             requirements_context=requirements_context,
         )
     except RuntimeError as e:
-        print(f"[EVALUATE ERROR] RuntimeError: {e}")
+        # Use print-safe encoding for Windows GBK terminals
+        try:
+            print(f"[EVALUATE ERROR] RuntimeError: {e}", file=sys.stderr)
+        except UnicodeEncodeError:
+            print(f"[EVALUATE ERROR] RuntimeError: {str(e).encode('ascii', errors='replace').decode()}", file=sys.stderr)
         traceback.print_exc()
         raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
-        print(f"[EVALUATE ERROR] Unexpected: {e}")
+        try:
+            print(f"[EVALUATE ERROR] Unexpected: {e}", file=sys.stderr)
+        except UnicodeEncodeError:
+            print(f"[EVALUATE ERROR] Unexpected: {str(e).encode('ascii', errors='replace').decode()}", file=sys.stderr)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"评估服务异常: {str(e)}")
 
@@ -173,6 +188,68 @@ async def fetch_history(
 ):
     """Fetch paginated list of evaluation reports."""
     return list_reports(page=page, page_size=page_size)
+
+
+# ===== Rules endpoints =====
+
+@app.get("/api/rules")
+async def fetch_rules(
+    category: str = Query(default=""),
+    _auth: dict = Depends(require_auth),
+):
+    """Fetch all evaluation rules, optionally filtered by category."""
+    rules = list_rules(category=category if category else None)
+    return {"items": rules, "total": len(rules)}
+
+
+@app.post("/api/rules", response_model=Rule)
+async def add_rule(
+    body: RuleCreate,
+    _auth: dict = Depends(require_auth),
+):
+    """Create a new custom rule."""
+    rule = create_rule(body.model_dump())
+    return rule
+
+
+@app.put("/api/rules/{rule_id}", response_model=Rule)
+async def edit_rule(
+    rule_id: str,
+    body: RuleUpdate,
+    _auth: dict = Depends(require_auth),
+):
+    """Update an existing rule."""
+    updated = update_rule(rule_id, body.model_dump(exclude_none=True))
+    if updated is None:
+        raise HTTPException(status_code=404, detail="规则不存在")
+    return updated
+
+
+@app.delete("/api/rules/{rule_id}")
+async def remove_rule(
+    rule_id: str,
+    _auth: dict = Depends(require_auth),
+):
+    """Delete a custom rule. Built-in rules cannot be deleted."""
+    ok = delete_rule(rule_id)
+    if not ok:
+        # Check if it exists but is built-in
+        rules = list_rules()
+        exists = any(r["id"] == rule_id for r in rules)
+        if exists:
+            raise HTTPException(status_code=403, detail="内置规则不可删除")
+        raise HTTPException(status_code=404, detail="规则不存在")
+    return {"ok": True}
+
+
+# ===== Statistics endpoints =====
+
+@app.get("/api/stats", response_model=StatsResponse)
+async def fetch_stats(
+    _auth: dict = Depends(require_auth),
+):
+    """Fetch aggregated statistics across all evaluation reports."""
+    return get_all_stats()
 
 
 # ===== Health check =====

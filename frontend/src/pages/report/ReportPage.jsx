@@ -121,6 +121,7 @@ export default function ReportPage() {
               <FindingItem
                 key={`fail-${i}`}
                 severity={f.severity}
+                category={f.category}
                 title={f.title}
                 detail={f.detail}
                 regulation_ref={f.regulation_ref}
@@ -136,6 +137,7 @@ export default function ReportPage() {
               <FindingItem
                 key={`pass-${i}`}
                 severity={f.severity}
+                category={f.category}
                 title={f.title}
                 detail={f.detail}
                 regulation_ref={f.regulation_ref}

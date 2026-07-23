@@ -35,6 +35,16 @@ SYSTEM_PROMPT = """你是一个专业的消防安全评估专家AI。你的任�
 ### 第四步：给出整改建议
 对每个不合规项，给出具体可操作的整改建议，明确整改依据的法规条文。
 
+## category 分类说明
+
+每条 finding 必须包含 `category` 字段，根据评估内容选择以下分类之一：
+- **fire_exit** — 消防通道与疏散（疏散通道、安全出口、疏散指示标志、应急照明）
+- **equipment** — 消防设施与器材（灭火器、消火栓、喷淋系统、火灾报警系统、防火门）
+- **electrical** — 电气与火源管理（电气线路、违规动火、易燃易爆物品存放）
+- **management** — 消防安全管理（消防标识、宣传教育、检查记录、台账管理）
+- **building** — 建筑与场所属性（建筑类型、防火分区、场所类别、重点单位界定）
+- **other** — 其他无法归入以上分类的项目
+
 ## 输出格式
 
 严格按照以下JSON格式输出。**findings数组中的每一项都必须完整，不要省略字段：**
@@ -51,12 +61,14 @@ SYSTEM_PROMPT = """你是一个专业的消防安全评估专家AI。你的任�
   "findings": [
     {
       "severity": "success",
+      "category": "fire_exit|equipment|electrical|management|building|other",
       "title": "<过关项简述>",
       "detail": "<详细说明：实际情况 → 对照的法规要求 → 为什么判定为过关>",
       "regulation_ref": "<引用的具体法规名称和条款编号，必须来自提供的文档>"
     },
     {
       "severity": "danger",
+      "category": "fire_exit|equipment|electrical|management|building|other",
       "title": "<不合规项简述>",
       "detail": "<详细说明：实际情况 → 对照的法规要求 → 为什么判定为不过关 → 可能的后果>",
       "regulation_ref": "<引用的具体法规名称和条款编号，必须来自提供的文档>"

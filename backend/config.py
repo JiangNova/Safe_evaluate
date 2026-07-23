@@ -16,6 +16,19 @@ QWEN_API_BASE = os.getenv(
 )
 QWEN_MODEL = os.getenv("QWEN_MODEL", "qwen-vl-plus")
 
+# Backup API (failover when primary API is unreachable)
+# Uses OpenAI-compatible protocol — works with SiliconFlow, Wishes, etc.
+BACKUP_API_KEY = os.getenv("BACKUP_API_KEY", "")
+BACKUP_API_BASE = os.getenv(
+    "BACKUP_API_BASE",
+    "https://api.siliconflow.cn/v1",
+)
+BACKUP_MODEL = os.getenv("BACKUP_MODEL", "Qwen/Qwen2.5-VL-72B-Instruct")
+
+# Retry settings
+API_MAX_RETRIES = int(os.getenv("API_MAX_RETRIES", "3"))
+API_RETRY_DELAY = float(os.getenv("API_RETRY_DELAY", "1.5"))  # seconds, multiplied exponentially
+
 # App settings
 REQUIREMENT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "requirement")
 REPORT_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "reports")
@@ -42,4 +55,5 @@ if _LOADED:
     print(f"[CONFIG] .env loaded from: {_ENV_PATH}")
 else:
     print(f"[CONFIG] WARNING: .env not found at: {_ENV_PATH}, using defaults", file=sys.stderr)
-print(f"[CONFIG] Model={QWEN_MODEL} | Users={list(USERS.keys())} | CORS={CORS_ORIGINS} | API_KEY={'SET' if QWEN_API_KEY else 'MISSING'}")
+print(f"[CONFIG] Model={QWEN_MODEL} | Users={list(USERS.keys())} | CORS={CORS_ORIGINS}")
+print(f"[CONFIG] Primary API:  {'SET' if QWEN_API_KEY else 'MISSING'} | Backup API: {'SET' if BACKUP_API_KEY else 'MISSING'} | Retries={API_MAX_RETRIES}")
