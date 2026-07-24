@@ -1,53 +1,32 @@
-=== 2026-07-24 13:59:40 ===
-Content (1613 chars):
+=== 2026-07-24 14:17:02 ===
+Content (845 chars):
 ```json
 {
   "title": "消防安全评估报告",
-  "overall_assessment": "本次评估针对一处疑似九小场所（茶楼）的消防安全隐患进行检查。根据图片及手写记录，发现存在灭火器配置不足、疏散通道堆放杂物等火灾隐患，判定为部分不过关。需立即整改以消除火灾风险。",
+  "overall_assessment": "本次评估主要针对一处疑似消防设施检查或培训场景进行分析。经对照相关消防法规，发现存在以下问题：1处灭火器放置位置不当，1处未见明显消防安全标识。其余方面如疏散通道、建筑属性等因图片信息不足无法判定。总体评估为部分过关。",
   "stats": {
-    "compliant": 2,
-    "nonCompliant": 3,
-    "suggestions": 3
+    "compliant": 0,
+    "nonCompliant": 2,
+    "suggestions": 2
   },
   "findings": [
     {
-      "severity": "success",
-      "category": "management",
-      "title": "消防安全标识基本齐全",
-      "detail": "图片中可见墙上张贴有“禁止吸烟”标志，符合《中华人民共和国消防法》第21条关于公众聚集场所应设置明显消防安全警示标志的要求。",
-      "regulation_ref": "《中华人民共和国消防法》第二十一条"
-    },
-    {
-      "severity": "success",
-      "category": "building",
-      "title": "场所属性符合九小场所定义",
-      "detail": "根据图片内容及手写记录描述，该场所为小型餐饮场所（茶楼），属于“九小场所”范畴，依据《派出所防火工作消防监督指引手册7(2026版)》第五条，派出所可依法开展日常监督检查。",
-      "regulation_ref": "《派出所防火工作消防监督指引手册7(2026版)》第五条"
-    },
-    {
-      "severity": "danger",
-      "category": "fire_exit",
-      "title": "疏散通道被杂物堵塞",
-      "detail": "图片显示疏散通道内放置有矮桌和杂物，严重阻碍人员疏散。依据《消防监督检查规定》第三十八条第一款，此行为构成重大火灾隐患，违反了《中华人民共和国消防法》第28条关于保持疏散通道畅通的规定。",
-      "regulation_ref": "《中华人民共和国消防法》第二十八条，《消防监督检查规定》第三十八条"
-    },
-    {
-      "severity": "danger",
+      "severity": "warning",
       "category": "equipment",
-      "title": "灭火器配置不足且位置不当",
-      "detail": "图片中仅发现一个放置在矮桌上的灭火器，数量明显不足。根据《湖南省消防安全重点单位界定标准》，建筑面积超过300平方米的公共餐饮场所应配备足够数量的灭火器，且应放置在便于取用的位置。当前配置不符合要求，存在火灾初期无法及时扑救的风险。",
-      "regulation_ref": "《湖南省消防安全重点单位界定标准》"
+      "title": "灭火器放置位置不当",
+      "detail": "图片中显示一个灭火器被放置在地面上，其喷嘴朝向地面，这种放置方式不符合《消防监督检查规定》（公安部第120号令）中关于灭火器应稳固放置、喷嘴朝上的要求。根据该规定第三十八条，此类情况属于一般火灾隐患，建议立即整改。",
+      "regulation_ref": "《消防监督检查规定》第三十八条"
     },
     {
-      "severity": "danger",
-      "category": "electrical",
-      "title": "电气线路敷设不规范",
-      "detail": "图片中可见墙壁上有多根电线裸露敷设，未采取穿管保护措施，存在因线路老化或短路引发火灾的风险。依据《消防监督检查规定》第三十八条第四款，此行为构成严重威胁公共安全的火灾隐患，违反了《中华人民共和国消防法》第27条关于电气线路安装应符合消防安全技术标准的规定。",
-      "regulation_ref": "《中华人民共和国消防法》第二十七条，《消防监督检查规定》第三十八条"
+      "severity": "warning",
+      "category": "management",
+      "title": "未见明显消防安全标识",
+      "detail": "图片中未观察到任何明显的消防安全标识，如“禁止吸烟”、“安全出口”、“灭火器”等。根据《中华人民共和国消防法》及《长沙市公安局派出所防火工作规范》，公共场所应按规定设置消防安全标识，以提示和引导人员注意消防安全。此情况虽不构成直接危险，但属于管理缺失，建议补充完善。",
+      "regulation_ref": "《中华人民共和国消防法》第十六条"
     }
   ]
 }
 ```
 
 Full API result keys: ['choices', 'object', 'usage', 'created', 'system_fingerprint', 'model', 'id']
-Usage: {'prompt_tokens': 7062, 'completion_tokens': 686, 'total_tokens': 7748, 'prompt_tokens_details': {'cached_tokens': 0}, 'completion_tokens_details': {'text_tokens': 686}}
+Usage: {'prompt_tokens': 7062, 'completion_tokens': 367, 'total_tokens': 7429, 'prompt_tokens_details': {'cached_tokens': 0}, 'completion_tokens_details': {'text_tokens': 367}}

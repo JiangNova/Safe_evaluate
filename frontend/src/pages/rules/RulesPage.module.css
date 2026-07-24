@@ -264,3 +264,43 @@
   justify-content: flex-end;
   gap: var(--spacing-sm);
 }
+
+/* PDF upload zone */
+.uploadZone {
+  border: 2px dashed var(--border-input);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  text-align: center;
+}
+
+.uploadZone:hover {
+  border-color: var(--color-primary);
+  background: rgba(var(--color-primary-rgb, 37 99 235), 0.04);
+}
+
+.uploadZoneDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uploadHint {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.uploadSuccess {
+  font-size: 13px;
+  color: #059669;
+}
+
+.uploadRetry {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.fileInput {
+  display: none;
+}

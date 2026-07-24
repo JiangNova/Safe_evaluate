@@ -74,6 +74,15 @@ export function deleteRule(id) {
   return api.delete(`/rules/${id}`);
 }
 
+export function parseRulePdf(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/rules/parse-pdf', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000,
+  });
+}
+
 // ===== Stats APIs =====
 export function getStats() {
   return api.get('/stats');

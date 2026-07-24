@@ -25,7 +25,7 @@ from .models import (
 )
 from .auth import authenticate, verify_token
 from .database import save_report, get_report, list_reports, init_db
-from .document_parser import load_all_requirements, build_requirements_context
+from .document_parser import load_all_requirements, build_requirements_context, parse_pdf
 from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
@@ -241,6 +241,44 @@ async def fetch_history(
 
 
 # ===== Rules endpoints =====
+
+
+@app.post("/api/rules/parse-pdf")
+async def parse_rule_pdf(
+    file: UploadFile = File(...),
+    _auth: dict = Depends(require_auth),
+):
+    """Upload a PDF and extract text for rule creation.
+
+    Returns the extracted text, which the frontend can use to populate
+    the rule description / source_doc fields.
+    """
+    mime = file.content_type or ""
+    if "pdf" not in mime.lower():
+        raise HTTPException(
+            status_code=400,
+            detail=f"仅支持PDF文件，当前类型: {mime or '未知'}",
+        )
+
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"文件过大（{file.filename}），最大支持 {MAX_FILE_SIZE // (1024 * 1024)}MB",
+        )
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="文件为空")
+
+    text = parse_pdf(content)
+
+    return {
+        "filename": file.filename,
+        "text": text,
+        "length": len(text),
+    }
+
+
+# ===== Rules (CRUD) endpoints =====
 
 @app.get("/api/rules")
 async def fetch_rules(

@@ -369,6 +369,27 @@ def load_all_requirements() -> list[dict]:
     return documents
 
 
+def parse_pdf(file_content: bytes) -> str:
+    """Extract text from a PDF file (given as bytes)."""
+    try:
+        from pypdf import PdfReader
+        import io
+        reader = PdfReader(io.BytesIO(file_content))
+        pages = []
+        for page in reader.pages:
+            text = page.extract_text()
+            if text and text.strip():
+                pages.append(text.strip())
+        result = "\n\n".join(pages)
+        if not result.strip():
+            return "[PDF文件无可提取的文字内容，可能是扫描图片类PDF]"
+        return result
+    except ImportError:
+        return "[无法解析PDF，缺少 pypdf 依赖。请运行: pip install pypdf]"
+    except Exception as e:
+        return f"[PDF解析失败: {e}]"
+
+
 def _text_quality(text: str) -> float:
     """Return a 0-1 score indicating how 'clean' the extracted text is.
 

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getRules, createRule, updateRule, deleteRule } from '../../services/api';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { getRules, createRule, updateRule, deleteRule, parseRulePdf } from '../../services/api';
 import Button from '../../components/ui/Button';
 import Loading from '../../components/ui/Loading';
 import styles from './RulesPage.module.css';
@@ -23,6 +23,9 @@ export default function RulesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [pdfFileName, setPdfFileName] = useState('');
+  const pdfInputRef = useRef(null);
   const [form, setForm] = useState({
     name: '',
     category: 'other',
@@ -50,6 +53,7 @@ export default function RulesPage() {
   function openCreateForm() {
     setEditingRule(null);
     setForm({ name: '', category: 'other', description: '', source_doc: '', clause: '' });
+    setPdfFileName('');
     setShowForm(true);
   }
 
@@ -62,6 +66,7 @@ export default function RulesPage() {
       source_doc: rule.source_doc || '',
       clause: rule.clause || '',
     });
+    setPdfFileName('');
     setShowForm(true);
   }
 
@@ -69,6 +74,37 @@ export default function RulesPage() {
     setShowForm(false);
     setEditingRule(null);
     setError('');
+  }
+
+  async function handlePdfUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setError('仅支持PDF格式的文件');
+      return;
+    }
+
+    setUploadingPdf(true);
+    setError('');
+    try {
+      const res = await parseRulePdf(file);
+      const { filename, text } = res.data;
+      setPdfFileName(filename);
+      setForm((prev) => ({
+        ...prev,
+        description: text || '',
+        source_doc: filename || prev.source_doc,
+      }));
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || '文件上传失败';
+      setError(`PDF解析失败: ${msg}`);
+      setPdfFileName('');
+    } finally {
+      setUploadingPdf(false);
+      // Reset file input so the same file can be re-selected
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+    }
   }
 
   async function handleSave() {
@@ -153,6 +189,35 @@ export default function RulesPage() {
                 value={form.name}
                 onChange={(e) => handleFormChange('name', e.target.value)}
                 placeholder="例如：GB 50016 建筑设计防火规范"
+              />
+            </div>
+
+            {/* PDF upload area — extracts text to auto-populate description */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>上传PDF文档（可选）</label>
+              <div
+                className={`${styles.uploadZone} ${uploadingPdf ? styles.uploadZoneDisabled : ''}`}
+                onClick={() => !uploadingPdf && pdfInputRef.current?.click()}
+              >
+                {uploadingPdf ? (
+                  <span className={styles.uploadHint}>解析中，请稍候...</span>
+                ) : pdfFileName ? (
+                  <span className={styles.uploadSuccess}>
+                    ✅ 已解析: <strong>{pdfFileName}</strong>
+                    <span className={styles.uploadRetry}>（点击重新上传）</span>
+                  </span>
+                ) : (
+                  <span className={styles.uploadHint}>
+                    📄 点击上传PDF文件，自动填充规则描述和来源文档
+                  </span>
+                )}
+              </div>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept=".pdf,application/pdf"
+                className={styles.fileInput}
+                onChange={handlePdfUpload}
               />
             </div>
 
