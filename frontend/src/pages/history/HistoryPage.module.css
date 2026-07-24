@@ -71,6 +71,22 @@
   color: var(--color-danger);
 }
 
+.badgeFailed {
+  color: #6b7280;
+}
+
+.failedTag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
 .viewLink {
   color: var(--color-primary);
   font-size: 11px;

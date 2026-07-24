@@ -2,29 +2,13 @@
 import json
 import os
 from collections import defaultdict
-from .config import REPORT_STORAGE_DIR
+from .database import get_all_reports, count_failed
 from .models import FINDING_CATEGORIES
 
 
 def _load_all_reports() -> list[dict]:
-    """Load all report JSON files from storage."""
-    reports = []
-    if not os.path.exists(REPORT_STORAGE_DIR):
-        return reports
-
-    for filename in os.listdir(REPORT_STORAGE_DIR):
-        if not filename.endswith(".json"):
-            continue
-        filepath = os.path.join(REPORT_STORAGE_DIR, filename)
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                reports.append(json.load(f))
-        except (json.JSONDecodeError, OSError):
-            continue
-
-    # Sort by created_at ascending
-    reports.sort(key=lambda r: r.get("created_at", ""))
-    return reports
+    """Load all successful reports from SQLite for statistics computation."""
+    return get_all_reports()  # excludes status='failed'
 
 
 def compute_overview(reports: list[dict]) -> dict:
@@ -62,6 +46,7 @@ def compute_overview(reports: list[dict]) -> dict:
 
     total_findings = compliant + non_compliant
     compliance_rate = round(compliant / total_findings * 100, 1) if total_findings > 0 else 0.0
+    failed_count = count_failed()
 
     return {
         "total_reports": total,
@@ -71,6 +56,7 @@ def compute_overview(reports: list[dict]) -> dict:
         "total_suggestions": suggestions,
         "compliance_rate": compliance_rate,
         "risk_distribution": risk_dist,
+        "failed_count": failed_count,
     }
 
 

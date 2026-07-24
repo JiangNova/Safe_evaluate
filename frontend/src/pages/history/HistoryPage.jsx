@@ -7,6 +7,7 @@ const RISK_MAP = {
   low: { label: '低风险', cls: styles.badgeLow },
   medium: { label: '中风险', cls: styles.badgeMedium },
   high: { label: '高风险', cls: styles.badgeHigh },
+  failed: { label: '评估失败', cls: styles.badgeFailed },
 };
 
 export default function HistoryPage() {
@@ -34,6 +35,7 @@ export default function HistoryPage() {
           name: item.title,
           date: item.date,
           risk: item.risk_level,
+          status: item.status || 'success',
         })));
         setTotal(res.data.total || 0);
       } catch (err) {
@@ -79,7 +81,12 @@ export default function HistoryPage() {
                   className={styles.row}
                   onClick={() => navigate(`/report/${record.id}`)}
                 >
-                  <span>{record.name}</span>
+                  <span>
+                    {record.name}
+                    {record.status === 'failed' && (
+                      <span className={styles.failedTag}>失败</span>
+                    )}
+                  </span>
                   <span>{record.date}</span>
                   <span className={`${styles.badge} ${risk.cls}`}>
                     {risk.label}

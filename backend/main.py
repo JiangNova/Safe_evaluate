@@ -24,13 +24,16 @@ from .models import (
     StatsResponse,
 )
 from .auth import authenticate, verify_token
-from .database import save_report, get_report, list_reports
+from .database import save_report, get_report, list_reports, init_db
 from .document_parser import load_all_requirements, build_requirements_context
 from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
 
 app = FastAPI(title="SafeEvaluate API", version="1.0.0")
+
+# Initialize database (create tables + migrate legacy JSON reports)
+init_db()
 
 # CORS
 app.add_middleware(
@@ -128,42 +131,89 @@ async def submit_evaluation(
     requirements_context = build_requirements_context(docs)
 
     # Call Qwen API for evaluation
+    raw_content = None
     try:
-        result = await evaluate_images(
+        result, raw_content = await evaluate_images(
             images=images,
             rules=rule_list,
             requirements_context=requirements_context,
         )
+        eval_status = "success"
+        error_msg = None
     except RuntimeError as e:
-        # Use print-safe encoding for Windows GBK terminals
+        # API call exhausted all retries — save failure record
         try:
             print(f"[EVALUATE ERROR] RuntimeError: {e}", file=sys.stderr)
         except UnicodeEncodeError:
-            print(f"[EVALUATE ERROR] RuntimeError: {str(e).encode('ascii', errors='replace').decode()}", file=sys.stderr)
+            print(
+                f"[EVALUATE ERROR] RuntimeError: {str(e).encode('ascii', errors='replace').decode()}",
+                file=sys.stderr,
+            )
         traceback.print_exc()
-        raise HTTPException(status_code=502, detail=str(e))
+        result = None
+        eval_status = "failed"
+        error_msg = str(e)
+    except ValueError as e:
+        # JSON parse failure — save failure record with raw response
+        try:
+            print(f"[EVALUATE ERROR] ValueError (parse): {e}", file=sys.stderr)
+        except UnicodeEncodeError:
+            print(
+                f"[EVALUATE ERROR] ValueError: {str(e).encode('ascii', errors='replace').decode()}",
+                file=sys.stderr,
+            )
+        traceback.print_exc()
+        result = None
+        eval_status = "failed"
+        error_msg = f"AI返回格式异常: {str(e)}"
     except Exception as e:
         try:
             print(f"[EVALUATE ERROR] Unexpected: {e}", file=sys.stderr)
         except UnicodeEncodeError:
-            print(f"[EVALUATE ERROR] Unexpected: {str(e).encode('ascii', errors='replace').decode()}", file=sys.stderr)
+            print(
+                f"[EVALUATE ERROR] Unexpected: {str(e).encode('ascii', errors='replace').decode()}",
+                file=sys.stderr,
+            )
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"评估服务异常: {str(e)}")
+        result = None
+        eval_status = "failed"
+        error_msg = f"评估服务异常: {str(e)}"
 
-    # Build report
-    report = {
-        "title": result.get("title", "消防安全评估报告"),
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "filename": ", ".join(filenames),
-        "overall_assessment": result.get("overall_assessment", ""),
-        "rules": rule_list,
-        "stats": result.get("stats", {"compliant": 0, "nonCompliant": 0, "suggestions": 0}),
-        "findings": result.get("findings", []),
-    }
+    # Build report (always — success or failure)
+    if result and eval_status == "success":
+        report = {
+            "title": result.get("title", "消防安全评估报告"),
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "filename": ", ".join(filenames),
+            "overall_assessment": result.get("overall_assessment", ""),
+            "rules": rule_list,
+            "stats": result.get("stats", {"compliant": 0, "nonCompliant": 0, "suggestions": 0}),
+            "findings": result.get("findings", []),
+            "status": "success",
+            "error_message": None,
+            "raw_response": raw_content,
+        }
+    else:
+        report = {
+            "title": "消防安全评估报告",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "filename": ", ".join(filenames),
+            "overall_assessment": "",
+            "rules": rule_list,
+            "stats": {"compliant": 0, "nonCompliant": 0, "suggestions": 0},
+            "findings": [],
+            "status": "failed",
+            "error_message": error_msg,
+            "raw_response": raw_content,
+        }
 
     # Save and return
     report_id = save_report(report)
-    return EvaluateResponse(report_id=report_id)
+    return EvaluateResponse(
+        report_id=report_id,
+        status=eval_status,
+        error=error_msg if eval_status == "failed" else None,
+    )
 
 
 # ===== Report endpoints =====

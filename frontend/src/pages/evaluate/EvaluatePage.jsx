@@ -11,14 +11,14 @@ export default function EvaluatePage() {
   const [files, setFiles] = useState([]);
   const [selectedRules, setSelectedRules] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   async function handleSubmit() {
-    setError('');
+    setError(null);
 
     if (files.length === 0) {
-      setError('请先上传评估资料');
+      setError({ message: '请先上传评估资料' });
       return;
     }
 
@@ -29,9 +29,46 @@ export default function EvaluatePage() {
       formData.append('rules', JSON.stringify(selectedRules));
 
       const res = await submitEvaluation(formData);
+
+      // Check if the backend reported a failure
+      if (res.data.status === 'failed') {
+        setError({
+          message: res.data.error || '评估执行失败，AI 服务暂时不可用',
+          reportId: res.data.report_id,
+          retryable: true,
+        });
+        return;
+      }
+
       navigate(`/report/${res.data.report_id}`);
     } catch (err) {
-      setError(err.response?.data?.detail || err.response?.data?.message || '评估提交失败，请重试');
+      const detail = err.response?.data?.detail || '';
+      const status = err.response?.status || 0;
+
+      if (status === 502 || status === 500) {
+        // Server-side error — may include a saved report_id in detail
+        const match = detail.match(/报告ID[：:]?\s*([a-f0-9]+)/i);
+        setError({
+          message: detail || '服务器评估服务异常，请稍后重试',
+          reportId: match ? match[1] : null,
+          retryable: true,
+        });
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        setError({
+          message: '评估请求超时，AI 服务响应时间过长，请稍后重试',
+          retryable: true,
+        });
+      } else if (!err.response) {
+        setError({
+          message: '网络连接失败，请检查网络后重试',
+          retryable: true,
+        });
+      } else {
+        setError({
+          message: detail || err.response?.data?.message || '评估提交失败，请重试',
+          retryable: false,
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -49,7 +86,31 @@ export default function EvaluatePage() {
       </div>
 
       {error && (
-        <div className={styles.errorBanner}>{error}</div>
+        <div className={styles.errorBanner}>
+          <div className={styles.errorTitle}>
+            {error.retryable ? '⚠️ 评估执行失败' : '❌ 提交失败'}
+          </div>
+          <p className={styles.errorMessage}>
+            {typeof error === 'string' ? error : error.message}
+          </p>
+          {error.reportId && (
+            <div className={styles.errorInfo}>
+              <span>评估记录已保存（ID: {error.reportId}），可查看详细错误信息</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate(`/report/${error.reportId}`)}
+              >
+                查看错误详情
+              </Button>
+            </div>
+          )}
+          {error.retryable && (
+            <p className={styles.retryHint}>
+              建议检查网络连接和 API 配置后重试。若持续失败，可能是 AI 服务暂时不可用，请稍后再试。
+            </p>
+          )}
+        </div>
       )}
 
       <div className={styles.columns}>

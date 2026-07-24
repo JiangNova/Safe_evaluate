@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getReport } from '../../services/api';
 import StatCard from './StatCard';
 import FindingItem from './FindingItem';
@@ -8,6 +8,7 @@ import styles from './ReportPage.module.css';
 
 export default function ReportPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,7 +19,12 @@ export default function ReportPage() {
         const res = await getReport(id);
         setReport(res.data);
       } catch (err) {
-        setError('加载报告失败');
+        const detail = err.response?.data?.detail || '';
+        setError(
+          detail
+            ? `加载报告失败: ${detail}`
+            : '加载报告失败，请确认报告ID有效且后端服务正常运行'
+        );
       } finally {
         setLoading(false);
       }
@@ -31,48 +37,68 @@ export default function ReportPage() {
   }
 
   if (error) {
-    return <div className={styles.error}>{error}</div>;
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorIcon}>!</div>
+        <h2>无法加载报告</h2>
+        <p>{error}</p>
+        <Button variant="secondary" onClick={() => navigate('/history')}>
+          返回历史记录
+        </Button>
+      </div>
+    );
   }
 
-  // Use mock data when API is not available
-  const data = report || {
-    title: '消防安全评估报告',
-    date: '2026-07-23',
-    overall_assessment: '该场所整体消防安全状况良好，大部分消防设施符合规范要求，但存在个别疏散通道和标识方面的问题，建议限期整改。',
-    stats: { compliant: 3, nonCompliant: 2, suggestions: 2 },
-    findings: [
-      {
-        severity: 'success',
-        title: '灭火器配置合规',
-        detail: '现场配置的灭火器类型、数量、位置均符合要求，且在有效期内。',
-        regulation_ref: '《消防监督检查规定》第XX条',
-      },
-      {
-        severity: 'success',
-        title: '自动喷淋系统运行正常',
-        detail: '喷淋头布置密度、覆盖范围、供水压力均符合规范要求。',
-        regulation_ref: 'GB 50084 自动喷水灭火系统设计规范',
-      },
-      {
-        severity: 'success',
-        title: '安全出口标识清晰',
-        detail: '各楼层安全出口标识醒目，符合疏散指示要求。',
-        regulation_ref: 'GB 50016 建筑设计防火规范',
-      },
-      {
-        severity: 'danger',
-        title: '疏散通道宽度不达标',
-        detail: '二层东侧疏散通道实测宽度约1.1m，规范要求疏散通道净宽度不应小于1.4m，存在人员疏散拥堵风险，一旦发生火灾可能造成严重后果。',
-        regulation_ref: 'GB 50016 建筑设计防火规范 第5.5.18条',
-      },
-      {
-        severity: 'warning',
-        title: '应急照明数量不足',
-        detail: '地下停车场B区缺少应急疏散指示灯，现有照明不足以在断电情况下引导人员安全疏散，建议增设3处应急照明灯具。',
-        regulation_ref: 'GB 50116 火灾自动报警系统设计规范',
-      },
-    ],
-  };
+  if (!report) {
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorIcon}>!</div>
+        <h2>报告不存在</h2>
+        <p>未找到该报告，可能已被删除</p>
+        <Button variant="secondary" onClick={() => navigate('/history')}>
+          返回历史记录
+        </Button>
+      </div>
+    );
+  }
+
+  // Failed evaluation — show error details instead of blank/mock report
+  if (report.status === 'failed') {
+    return (
+      <div className={styles.failedPage}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>消防安全评估报告</h1>
+          <span className={styles.dateBadge}>{report.date}</span>
+        </div>
+
+        <div className={styles.failedBanner}>
+          <h3>⚠️ 评估执行失败</h3>
+          <p className={styles.failedMessage}>
+            {report.error_message || '未知错误'}
+          </p>
+          {report.raw_response && (
+            <details className={styles.rawResponse}>
+              <summary>查看原始AI响应（调试用）</summary>
+              <pre>{report.raw_response.substring(0, 2000)}</pre>
+            </details>
+          )}
+          <p className={styles.retryHint}>
+            请返回评估页面重新上传文件进行评估
+          </p>
+          <div className={styles.failedActions}>
+            <Button variant="secondary" onClick={() => navigate('/history')}>
+              返回历史
+            </Button>
+            <Button onClick={() => navigate('/evaluate')}>
+              重新评估
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const data = report;
 
   // Split findings into pass/fail for clear display
   const passItems = data.findings.filter(f => f.severity === 'success');

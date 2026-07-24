@@ -43,8 +43,12 @@ JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
 # CORS
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 
+# Database (SQLite)
+DB_PATH = os.path.join(os.path.dirname(__file__), "data", "reports.db")
+
 # Ensure directories exist
 os.makedirs(REPORT_STORAGE_DIR, exist_ok=True)
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 # ----- Startup check -----
 _STARTUP_OK = True

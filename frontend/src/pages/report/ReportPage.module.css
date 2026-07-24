@@ -97,3 +97,97 @@
   padding: 40px;
   color: var(--text-muted);
 }
+
+/* Error / not-found container */
+.errorContainer {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.errorIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.errorContainer h2 {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.errorContainer p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+/* Failed evaluation banner */
+.failedPage {
+  max-width: 700px;
+}
+
+.failedBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.failedBanner h3 {
+  font-size: 16px;
+  color: #dc2626;
+  margin-bottom: 12px;
+}
+
+.failedMessage {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rawResponse {
+  margin-bottom: 16px;
+}
+
+.rawResponse summary {
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.rawResponse pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 300px;
+  margin-top: 8px;
+}
+
+.retryHint {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.failedActions {
+  display: flex;
+  gap: 12px;
+}

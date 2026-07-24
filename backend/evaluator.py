@@ -430,7 +430,7 @@ async def evaluate_images(
     rules: list[str],
     requirements_context: str,
     timeout: int = 120,
-) -> dict:
+) -> tuple[dict, str | None]:
     """Send one or more images for fire safety evaluation.
 
     Automatically retries on transient failures and falls back to the backup
@@ -443,7 +443,9 @@ async def evaluate_images(
         timeout: API timeout in seconds.
 
     Returns:
-        Parsed evaluation result dict with ``stats`` and ``findings``.
+        Tuple of (parsed_result_dict, raw_ai_content_str_or_None).
+        raw_ai_content is the unparsed text from the AI response, useful for
+        debugging parse failures.
     """
     messages = _build_messages(images, rules, requirements_context)
 
@@ -455,6 +457,7 @@ async def evaluate_images(
     }
 
     errors: list[str] = []
+    raw_content: str | None = None
 
     # ---- Primary API (DashScope / Qwen) ----
     if QWEN_API_KEY:
@@ -472,13 +475,13 @@ async def evaluate_images(
             # Debug: log raw AI response content
             _log_raw_response(api_result, "PRIMARY")
             # Parse the nested response: choices[0].message.content → structured dict
-            content = api_result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            raw_content = api_result.get("choices", [{}])[0].get("message", {}).get("content", "")
             # --- DEBUG: dump raw content to file for diagnosis ---
-            _dump_debug(content, api_result)
+            _dump_debug(raw_content, api_result)
             # --- END DEBUG ---
-            if not content:
+            if not raw_content:
                 raise RuntimeError("AI returned empty response content")
-            return _parse_response(content)
+            return _parse_response(raw_content), raw_content
         except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as e:
             msg = f"Primary API failed: {e}"
             _safe_print(f"[API] {msg}", file=sys.stderr)
@@ -503,13 +506,13 @@ async def evaluate_images(
             # Debug: log raw AI response content
             _log_raw_response(api_result, "BACKUP")
             # Parse the nested response: choices[0].message.content → structured dict
-            content = api_result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            raw_content = api_result.get("choices", [{}])[0].get("message", {}).get("content", "")
             # --- DEBUG: dump raw content to file for diagnosis ---
-            _dump_debug(content, api_result)
+            _dump_debug(raw_content, api_result)
             # --- END DEBUG ---
-            if not content:
+            if not raw_content:
                 raise RuntimeError("Backup AI returned empty response content")
-            return _parse_response(content)
+            return _parse_response(raw_content), raw_content
         except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as e:
             msg = f"Backup API also failed: {e}"
             _safe_print(f"[API] {msg}", file=sys.stderr)

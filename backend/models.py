@@ -20,6 +20,8 @@ class LoginResponse(BaseModel):
 
 class EvaluateResponse(BaseModel):
     report_id: str
+    status: str = "success"  # "success" | "failed"
+    error: Optional[str] = None
 
 
 # ===== Finding & Report =====
@@ -64,7 +66,8 @@ class ReportListItem(BaseModel):
     title: str
     date: str
     filename: str
-    risk_level: str  # "low" | "medium" | "high"
+    risk_level: str  # "low" | "medium" | "high" | "failed"
+    status: str = "success"  # "success" | "failed"
     created_at: str
 
 
@@ -113,6 +116,7 @@ class StatsOverview(BaseModel):
     total_suggestions: int
     compliance_rate: float  # 0-100
     risk_distribution: dict  # {"low": N, "medium": N, "high": N}
+    failed_count: int = 0  # count of failed evaluations
 
 
 class CategoryStat(BaseModel):
