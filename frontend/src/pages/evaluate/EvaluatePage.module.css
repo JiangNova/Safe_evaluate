@@ -3,6 +3,45 @@
   text-align: center;
 }
 
+/* Mode tabs */
+.modeTabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.modeTab {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.modeTab:first-child {
+  border-right: 1px solid var(--border-input);
+}
+
+.modeTab:hover {
+  background: #f1f5f9;
+}
+
+.modeTabActive {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.modeTabActive:hover {
+  background: var(--color-primary);
+}
+
 .title {
   font-size: 18px;
   font-weight: 600;
@@ -86,6 +125,111 @@
 .estimate {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* Progress panel */
+.progressPanel {
+  margin-top: var(--spacing-lg);
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.progressTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progressCount {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.progressBar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.taskStatus {
+  width: 20px;
+  text-align: center;
+}
+
+.taskFilename {
+  flex: 1;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskLabel {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Result panel */
+.resultPanel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: var(--spacing-lg);
+  padding: 16px 20px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+}
+
+.resultIcon {
+  font-size: 28px;
+}
+
+.resultInfo {
+  flex: 1;
+}
+
+.resultTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #166534;
+}
+
+.resultDesc {
+  font-size: 12px;
+  color: #4ade80;
 }
 
 @media (max-width: 900px) {

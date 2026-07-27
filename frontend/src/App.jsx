@@ -7,6 +7,7 @@ import ReportPage from './pages/report/ReportPage';
 import HistoryPage from './pages/history/HistoryPage';
 import RulesPage from './pages/rules/RulesPage';
 import StatsPage from './pages/stats/StatsPage';
+import EvaluateSummary from './pages/evaluate/EvaluateSummary';
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         }
       >
         <Route path="/evaluate" element={<EvaluatePage />} />
+        <Route path="/evaluate/summary" element={<EvaluateSummary />} />
         <Route path="/report/:id" element={<ReportPage />} />
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/rules" element={<RulesPage />} />
