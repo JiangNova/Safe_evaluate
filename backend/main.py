@@ -5,6 +5,7 @@ import sys
 import traceback
 from datetime import datetime
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends, Query
+from fastapi.responses import FileResponse
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -12,6 +13,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from .config import (
     MAX_FILE_SIZE,
     CORS_ORIGINS,
+    IMAGE_STORAGE_DIR,
 )
 from .models import (
     LoginRequest,
@@ -24,7 +26,7 @@ from .models import (
     StatsResponse,
 )
 from .auth import authenticate, verify_token
-from .database import save_report, get_report, list_reports, init_db
+from .database import save_report, get_report, list_reports, init_db, save_report_images, get_report_images
 from .document_parser import load_all_requirements, build_requirements_context, parse_pdf
 from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
@@ -78,6 +80,67 @@ async def require_auth(
     if payload is None:
         raise HTTPException(status_code=401, detail="Token无效或已过期")
     return payload
+
+
+# ===== Image persistence helper =====
+
+
+def _save_uploaded_images(report_id: str, images: list[tuple], filenames: list[str]) -> None:
+    """Save uploaded image bytes to disk and record metadata in DB."""
+    report_dir = os.path.join(IMAGE_STORAGE_DIR, report_id)
+    os.makedirs(report_dir, exist_ok=True)
+
+    image_records = []
+    for idx, (img_bytes, mime_type) in enumerate(images):
+        ext = _mime_to_ext(mime_type)
+        safe_name = f"{idx}{ext}"
+        file_path = os.path.join(report_dir, safe_name)
+        with open(file_path, "wb") as f:
+            f.write(img_bytes)
+        image_records.append({
+            "filename": filenames[idx] if idx < len(filenames) else f"image_{idx}",
+            "mime_type": mime_type,
+            "file_path": file_path,
+        })
+
+    if image_records:
+        save_report_images(report_id, image_records)
+
+
+def _mime_to_ext(mime_type: str) -> str:
+    """Map MIME type to file extension."""
+    mapping = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/gif": ".gif",
+        "image/bmp": ".bmp",
+        "image/webp": ".webp",
+        "application/pdf": ".pdf",
+    }
+    return mapping.get(mime_type, ".png")
+
+
+def _extract_raw_from_error(err_str: str) -> tuple[str | None, str]:
+    """Extract raw AI response embedded in error message (Bug B).
+
+    Returns (raw_content_or_None, cleaned_error_message).
+    """
+    marker = "\n--- RAW AI RESPONSE (first 1000 chars) ---\n"
+    if marker not in err_str:
+        return None, err_str
+
+    # Split: everything before marker is user-facing error, after is raw content
+    parts = err_str.split(marker, 1)
+    clean_error = parts[0]
+    raw_section = parts[1]
+
+    # Remove the closing marker if present
+    end_marker = "\n--- END RAW ---"
+    if raw_section.endswith(end_marker):
+        raw_section = raw_section[:-len(end_marker)]
+
+    return raw_section, clean_error
 
 
 # ===== Evaluate endpoint =====
@@ -152,9 +215,13 @@ async def submit_evaluation(
         traceback.print_exc()
         result = None
         eval_status = "failed"
-        error_msg = str(e)
+        # Bug B: extract raw AI response from error for DB storage
+        err_str = str(e)
+        raw_content, clean_error = _extract_raw_from_error(err_str)
+        error_msg = clean_error
     except ValueError as e:
-        # JSON parse failure — save failure record with raw response
+        # JSON parse failure (legacy — should now be caught inside evaluate_images,
+        # but kept as safety net for any remaining edge cases)
         try:
             print(f"[EVALUATE ERROR] ValueError (parse): {e}", file=sys.stderr)
         except UnicodeEncodeError:
@@ -209,6 +276,10 @@ async def submit_evaluation(
 
     # Save and return
     report_id = save_report(report)
+
+    # Persist uploaded images to disk and DB
+    _save_uploaded_images(report_id, images, filenames)
+
     return EvaluateResponse(
         report_id=report_id,
         status=eval_status,
@@ -227,7 +298,61 @@ async def fetch_report(
     report = get_report(report_id)
     if report is None:
         raise HTTPException(status_code=404, detail="报告不存在")
+
+    # Attach image URLs
+    images = get_report_images(report_id)
+    report["images"] = [
+        {
+            "index": img["index"],
+            "filename": img["filename"],
+            "url": f"/api/reports/{report_id}/images/{img['index']}",
+        }
+        for img in images
+    ]
+
     return report
+
+
+@app.get("/api/reports/{report_id}/images")
+async def fetch_report_images(
+    report_id: str,
+    _auth: dict = Depends(require_auth),
+):
+    """List image metadata for a report."""
+    images = get_report_images(report_id)
+    return {
+        "images": [
+            {
+                "index": img["index"],
+                "filename": img["filename"],
+                "url": f"/api/reports/{report_id}/images/{img['index']}",
+            }
+            for img in images
+        ]
+    }
+
+
+@app.get("/api/reports/{report_id}/images/{image_index}")
+async def serve_report_image(
+    report_id: str,
+    image_index: int,
+    _auth: dict = Depends(require_auth),
+):
+    """Serve a stored evaluation image."""
+    images = get_report_images(report_id)
+    if image_index < 0 or image_index >= len(images):
+        raise HTTPException(status_code=404, detail="图片不存在")
+
+    img = images[image_index]
+    file_path = img.get("file_path", "")
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="图片文件不存在")
+
+    return FileResponse(
+        file_path,
+        media_type=img.get("mime_type", "image/png"),
+        filename=img.get("filename", "image"),
+    )
 
 
 @app.get("/api/reports", response_model=HistoryResponse)

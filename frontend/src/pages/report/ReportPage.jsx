@@ -71,6 +71,21 @@ export default function ReportPage() {
           <span className={styles.dateBadge}>{report.date}</span>
         </div>
 
+        {report.images && report.images.length > 0 && (
+          <div className={styles.imageSection}>
+            {report.images.map((img) => (
+              <div key={img.index} className={styles.imageWrap}>
+                <img
+                  src={img.url}
+                  alt={img.filename || '评估图片'}
+                  className={styles.reportImage}
+                />
+                <span className={styles.imageLabel}>{img.filename}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className={styles.failedBanner}>
           <h3>⚠️ 评估执行失败</h3>
           <p className={styles.failedMessage}>
@@ -110,6 +125,21 @@ export default function ReportPage() {
         <h1 className={styles.title}>{data.title}</h1>
         <span className={styles.dateBadge}>{data.date}</span>
       </div>
+
+      {data.images && data.images.length > 0 && (
+        <div className={styles.imageSection}>
+          {data.images.map((img) => (
+            <div key={img.index} className={styles.imageWrap}>
+              <img
+                src={img.url}
+                alt={img.filename || '评估图片'}
+                className={styles.reportImage}
+              />
+              <span className={styles.imageLabel}>{img.filename}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {data.overall_assessment && (
         <div className={styles.overallBox}>
@@ -181,7 +211,7 @@ export default function ReportPage() {
         <Button variant="secondary" onClick={() => window.print()}>
           打印报告
         </Button>
-        <Button>导出 PDF</Button>
+        <Button onClick={() => window.print()}>导出 PDF</Button>
       </div>
     </div>
   );

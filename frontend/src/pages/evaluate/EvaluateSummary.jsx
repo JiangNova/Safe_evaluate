@@ -26,6 +26,7 @@ export default function EvaluateSummary() {
 
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState(null); // { url, filename } | null
 
   useEffect(() => {
     if (ids.length === 0) {
@@ -87,35 +88,57 @@ export default function EvaluateSummary() {
               key={r.id || i}
               className={`${styles.card} ${isFailed ? styles.cardFailed : ''}`}
             >
-              <div className={styles.cardHeader}>
-                <span className={styles.cardStatus}>{isFailed ? '❌' : '✅'}</span>
-                <span className={styles.cardFilename}>
-                  {r.data?.filename || `报告 #${i + 1}`}
-                </span>
-                <span
-                  className={styles.cardRisk}
-                  style={{ color: RISK_COLORS[risk] || RISK_COLORS.failed }}
+              <div className={styles.cardBody}>
+                <div
+                  className={styles.cardThumb}
+                  onClick={() => {
+                    const img = r.data?.images?.[0];
+                    if (img?.url) setPreviewImage({ url: img.url, filename: img.filename || r.data?.filename });
+                  }}
+                  title="点击查看原图"
                 >
-                  {RISK_LABELS[risk] || RISK_LABELS.failed}
-                </span>
-              </div>
-
-              {isFailed ? (
-                <div className={styles.cardError}>
-                  {r.error || r.data?.error_message || '评估执行失败，AI 服务暂时不可用'}
+                  {r.data?.images?.[0]?.url ? (
+                    <img
+                      src={r.data.images[0].url}
+                      alt={r.data?.filename || `报告 #${i + 1}`}
+                      className={styles.thumbImg}
+                    />
+                  ) : (
+                    <div className={styles.thumbPlaceholder}>📷</div>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <div className={styles.cardTitle}>
-                    {r.data?.title || '消防安全评估报告'}
+                <div className={styles.cardContent}>
+                  <div className={styles.cardHeader}>
+                    <span className={styles.cardStatus}>{isFailed ? '❌' : '✅'}</span>
+                    <span className={styles.cardFilename}>
+                      {r.data?.filename || `报告 #${i + 1}`}
+                    </span>
+                    <span
+                      className={styles.cardRisk}
+                      style={{ color: RISK_COLORS[risk] || RISK_COLORS.failed }}
+                    >
+                      {RISK_LABELS[risk] || RISK_LABELS.failed}
+                    </span>
                   </div>
-                  <div className={styles.cardStats}>
-                    <span className={styles.stat}>✅ {stats.compliant || 0}</span>
-                    <span className={styles.stat}>⚠️ {stats.nonCompliant || 0}</span>
-                    <span className={styles.stat}>💡 {stats.suggestions || 0}</span>
-                  </div>
-                </>
-              )}
+
+                  {isFailed ? (
+                    <div className={styles.cardError}>
+                      {r.error || r.data?.error_message || '评估执行失败，AI 服务暂时不可用'}
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.cardTitle}>
+                        {r.data?.title || '消防安全评估报告'}
+                      </div>
+                      <div className={styles.cardStats}>
+                        <span className={styles.stat}>✅ {stats.compliant || 0}</span>
+                        <span className={styles.stat}>⚠️ {stats.nonCompliant || 0}</span>
+                        <span className={styles.stat}>💡 {stats.suggestions || 0}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
 
               <div className={styles.cardActions}>
                 {isFailed ? (
@@ -132,6 +155,17 @@ export default function EvaluateSummary() {
           );
         })}
       </div>
+
+      {/* Image preview modal */}
+      {previewImage && (
+        <div className={styles.previewOverlay} onClick={() => setPreviewImage(null)}>
+          <div className={styles.previewBox} onClick={(e) => e.stopPropagation()}>
+            <button className={styles.previewClose} onClick={() => setPreviewImage(null)}>✕</button>
+            <img src={previewImage.url} alt={previewImage.filename} className={styles.previewImg} />
+            <div className={styles.previewName}>{previewImage.filename}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

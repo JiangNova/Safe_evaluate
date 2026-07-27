@@ -13,7 +13,7 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
         <span className={styles.brandIcon}>🔥</span>
-        <span className={styles.brandName}>消防安全评估</span>
+        <span className={styles.brandName}>天心公安分局暮云派出所场所安全多模态智能研判平台</span>
       </div>
       <div className={styles.divider}>功能</div>
       <nav>

@@ -7,7 +7,7 @@ export default function BrandPanel() {
       <div className={`${styles.circle} ${styles.circleBottom}`} />
       <div className={styles.content}>
         <div className={styles.icon}>🔥</div>
-        <div className={styles.title}>消防安全评估</div>
+        <div className={styles.title}>天心公安分局暮云派出所场所安全多模态智能研判平台</div>
         <div className={styles.divider} />
         <div className={styles.subtitle}>
           智能评估 · 精准研判

@@ -46,9 +46,13 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1
 # Database (SQLite)
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "reports.db")
 
+# Image storage (uploaded evaluation images persisted to disk)
+IMAGE_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "images")
+
 # Ensure directories exist
 os.makedirs(REPORT_STORAGE_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+os.makedirs(IMAGE_STORAGE_DIR, exist_ok=True)
 
 # ----- Startup check -----
 _STARTUP_OK = True

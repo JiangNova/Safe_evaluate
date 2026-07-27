@@ -22,8 +22,10 @@
 
 .brandName {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-primary);
+  line-height: 1.4;
+  word-break: keep-all;
 }
 
 .divider {

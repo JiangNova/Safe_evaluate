@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SafeEvaluate 消防安全AI评估系统 — 用户手册</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 18mm 22mm 18mm;
+    @bottom-center {
+      content: "— " counter(page) " —";
+      font-size: 9px;
+      color: #999;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    }
+  }
+  @page :first {
+    @bottom-center {
+      content: none;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #2c3e50;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ===== COVER PAGE ===== */
+  .cover {
+    text-align: center;
+    padding: 80px 0 40px;
+    page-break-after: always;
+  }
+  .cover .logo {
+    font-size: 56px;
+    margin-bottom: 16px;
+  }
+  .cover h1 {
+    font-size: 32px;
+    margin: 0 0 12px;
+    color: #1a1a2e;
+    letter-spacing: 2px;
+  }
+  .cover .subtitle {
+    font-size: 18px;
+    color: #e74c3c;
+    font-weight: 600;
+    margin-bottom: 40px;
+  }
+  .cover .meta {
+    font-size: 13px;
+    color: #888;
+    line-height: 2.2;
+  }
+  .cover .divider {
+    width: 60px;
+    height: 3px;
+    background: #e74c3c;
+    margin: 30px auto;
+  }
+
+  /* ===== TOC ===== */
+  .toc {
+    page-break-after: always;
+  }
+  .toc h2 {
+    font-size: 22px;
+    border-bottom: 2px solid #e74c3c;
+    padding-bottom: 8px;
+    margin-bottom: 20px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    padding: 6px 0;
+    border-bottom: 1px dotted #ddd;
+    font-size: 14px;
+  }
+  .toc li span.num {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  /* ===== SECTION TITLES ===== */
+  h2.section {
+    font-size: 22px;
+    color: #1a1a2e;
+    border-left: 4px solid #e74c3c;
+    padding-left: 12px;
+    margin: 32px 0 16px;
+    page-break-before: always;
+  }
+  h2.section.no-break {
+    page-break-before: avoid;
+  }
+  h3 {
+    font-size: 16px;
+    color: #c0392b;
+    margin: 20px 0 10px;
+  }
+  h4 {
+    font-size: 14px;
+    color: #34495e;
+    margin: 14px 0 8px;
+  }
+
+  /* ===== PARAGRAPHS ===== */
+  p { margin: 0 0 10px; }
+  p.tip {
+    background: #fef9e7;
+    border-left: 4px solid #f39c12;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 0 4px 4px 0;
+  }
+  p.note {
+    background: #eaf2f8;
+    border-left: 4px solid #2980b9;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 0 4px 4px 0;
+  }
+  p.warn {
+    background: #fdedec;
+    border-left: 4px solid #e74c3c;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* ===== SCREENSHOT PLACEHOLDER ===== */
+  .screen {
+    border: 2px dashed #ccc;
+    background: #fafafa;
+    padding: 20px;
+    text-align: center;
+    color: #aaa;
+    margin: 12px 0;
+    border-radius: 6px;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+
+  /* ===== TABLES ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #e74c3c;
+    color: #fff;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #eee;
+  }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  /* ===== STEPS ===== */
+  .steps {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+  }
+  .steps li {
+    counter-increment: step;
+    padding: 8px 0 8px 36px;
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  /* ===== FEATURE LIST ===== */
+  .feature-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 10px 0;
+  }
+  .feature-tag {
+    background: #fef5f5;
+    color: #c0392b;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    border: 1px solid #fadbd8;
+  }
+
+  /* ===== MODE COMPARISON ===== */
+  .mode-compare {
+    display: flex;
+    gap: 16px;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+  .mode-card {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .mode-card h4 {
+    margin-top: 0;
+    font-size: 15px;
+  }
+  .mode-card.single { border-top: 3px solid #2980b9; }
+  .mode-card.multi  { border-top: 3px solid #27ae60; }
+
+  /* ===== KEYBOARD ===== */
+  kbd {
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-family: inherit;
+  }
+
+  /* ===== LAYOUT ===== */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .footer-note {
+    text-align: center;
+    color: #bbb;
+    font-size: 10px;
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #eee;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ====== COVER ====== -->
+<div class="cover">
+  <div class="logo">🔥</div>
+  <h1>SafeEvaluate</h1>
+  <div class="subtitle">消防安全 AI 评估系统 · 用户操作手册</div>
+  <div class="divider"></div>
+  <div class="meta">
+    版本 v1.0<br>
+    2026 年 7 月<br>
+    适用于 PC 端浏览器（推荐 Chrome / Edge 最新版）
+  </div>
+</div>
+
+<!-- ====== TOC ====== -->
+<div class="toc">
+  <h2>目 录</h2>
+  <ul>
+    <li><span class="num">1</span> 系统简介</li>
+    <li><span class="num">2</span> 登录系统</li>
+    <li><span class="num">3</span> 新建评估（核心功能）</li>
+    <li><span class="num">4</span> 查看评估报告</li>
+    <li><span class="num">5</span> 历史记录</li>
+    <li><span class="num">6</span> 规则管理</li>
+    <li><span class="num">7</span> 统计分析</li>
+    <li><span class="num">8</span> 常见问题</li>
+  </ul>
+</div>
+
+<!-- ====== 1. SYSTEM INTRO ====== -->
+<h2 class="section">1. 系统简介</h2>
+
+<p>SafeEvaluate（消防安全 AI 评估系统）是一套基于大语言模型的<strong>消防安全智能评估平台</strong>。用户上传消防现场照片或建筑图纸，选择适用的消防法规标准，AI 即可自动识别隐患、对照规范条款、生成结构化的安全评估报告。</p>
+
+<h3>1.1 核心能力</h3>
+<div class="feature-grid">
+  <span class="feature-tag">📷 图片智能分析</span>
+  <span class="feature-tag">📋 多规则评估</span>
+  <span class="feature-tag">📄 报告自动生成</span>
+  <span class="feature-tag">📊 数据统计分析</span>
+  <span class="feature-tag">🔍 法规条款对照</span>
+  <span class="feature-tag">🖨️ 报告打印/导出</span>
+  <span class="feature-tag">📂 分图批量评估</span>
+  <span class="feature-tag">📚 自定义规则库</span>
+</div>
+
+<h3>1.2 系统导航</h3>
+<p>登录后，左侧边栏包含以下菜单：</p>
+<table>
+  <tr><th>菜单项</th><th>功能说明</th></tr>
+  <tr><td>🔍 新建评估</td><td>上传图片并启动 AI 消防安全评估</td></tr>
+  <tr><td>📋 历史记录</td><td>查看所有历史评估记录，支持分页浏览</td></tr>
+  <tr><td>📐 规则管理</td><td>管理评估依据的消防法规和检查标准</td></tr>
+  <tr><td>📊 统计分析</td><td>查看评估数据总览、趋势和风险分布</td></tr>
+</table>
+
+<div class="screen">[ 截图：系统主界面 — 侧边栏导航 + 顶部栏 ]</div>
+
+<!-- ====== 2. LOGIN ====== -->
+<h2 class="section">2. 登录系统</h2>
+
+<h3>2.1 登录页面</h3>
+<p>打开系统网址后，首先进入登录页面。页面分为左右两栏：</p>
+<ul>
+  <li><strong>左侧品牌面板</strong> — 展示系统名称和简介</li>
+  <li><strong>右侧登录表单</strong> — 输入用户名和密码进行认证</li>
+</ul>
+
+<div class="screen">[ 截图：登录页面 ]</div>
+
+<h3>2.2 登录操作</h3>
+<ol class="steps">
+  <li>在<strong>用户名</strong>输入框中输入您的账号</li>
+  <li>在<strong>密码</strong>输入框中输入密码</li>
+  <li>点击<strong>"登录"</strong>按钮</li>
+</ol>
+
+<p class="note"><strong>提示：</strong>登录成功后系统会自动跳转到「新建评估」页面。如果已登录状态下访问登录页，会自动重定向到评估页面。</p>
+
+<p class="warn"><strong>注意：</strong>账号由管理员在服务器配置中统一管理。如需新增或修改账号，请联系系统管理员。</p>
+
+<!-- ====== 3. EVALUATE ====== -->
+<h2 class="section">3. 新建评估（核心功能）</h2>
+
+<p>这是系统的核心页面，用于上传消防现场照片并启动 AI 评估。页面分为三个主要区域：<strong>文件上传区</strong>、<strong>进度/结果面板</strong>、<strong>规则选择侧栏</strong>。</p>
+
+<div class="screen">[ 截图：新建评估页面总览 ]</div>
+
+<h3>3.1 两种评估模式</h3>
+<p>页面顶部提供两个模式切换标签：</p>
+
+<div class="mode-compare">
+  <div class="mode-card single">
+    <h4>🔗 单次评估</h4>
+    <p>将所有上传的图片<strong>合并为一次评估</strong>，生成<strong>一份</strong>综合报告。适合同一场所的多角度照片。</p>
+    <p style="font-size:11px;color:#888;">预计耗时：1-3 分钟</p>
+  </div>
+  <div class="mode-card multi">
+    <h4>📄 分图评估</h4>
+    <p>每张图片<strong>独立评估</strong>，生成<strong>多份</strong>独立报告。适合不同场所或不同楼层的照片。</p>
+    <p style="font-size:11px;color:#888;">预计耗时：每张图片 2-4 分钟</p>
+  </div>
+</div>
+
+<p class="tip"><strong>使用建议：</strong>同一楼层的不同角度照片使用「单次评估」；不同楼层或不同建筑的图片使用「分图评估」。</p>
+
+<h3>3.2 上传文件</h3>
+<p>在上传区域，您可以：</p>
+<ul>
+  <li><strong>点击上传区域</strong>打开文件选择对话框</li>
+  <li><strong>拖拽文件</strong>直接拖入上传区域</li>
+  <li>支持 <strong>JPG、PNG、WebP</strong> 等常见图片格式</li>
+  <li>支持<strong>多文件同时上传</strong>（按住 Ctrl 或 Shift 多选）</li>
+</ul>
+<p>上传后文件以缩略图形式展示，可点击 ✕ 按钮移除单个文件。</p>
+
+<div class="screen">[ 截图：文件上传区域 — 已上传多张图片 ]</div>
+
+<h3>3.3 选择评估规则</h3>
+<p>右侧边栏显示可用的评估规则列表，按类别分组：</p>
+<table>
+  <tr><th>类别</th><th>涵盖内容</th></tr>
+  <tr><td>消防通道与疏散</td><td>安全出口、疏散通道、应急照明、疏散指示标志</td></tr>
+  <tr><td>消防设施与器材</td><td>灭火器、消火栓、自动喷淋、火灾报警系统</td></tr>
+  <tr><td>电气与火源管理</td><td>电气线路、配电箱、明火管理、防爆措施</td></tr>
+  <tr><td>消防安全管理</td><td>巡查制度、应急预案、消防演练、培训记录</td></tr>
+  <tr><td>建筑与场所属性</td><td>防火分区、耐火等级、防火间距、装修材料</td></tr>
+</table>
+<p>勾选需要评估的规则（可多选），未勾选的规则在本次评估中将被跳过。</p>
+
+<p class="tip"><strong>建议：</strong>根据实际场景选择 2-4 条相关规则即可，选择过多可能延长评估时间。</p>
+
+<h3>3.4 启动评估</h3>
+<ol class="steps">
+  <li>确认已上传至少一张图片</li>
+  <li>在右侧勾选需要使用的评估规则</li>
+  <li>确认底部的预估耗时信息</li>
+  <li>点击<strong>"开始评估"</strong>按钮</li>
+</ol>
+
+<p>提交后系统显示加载动画，提示"正在分析评估中"。在评估期间<strong>请勿关闭页面或刷新浏览器</strong>。</p>
+
+<div class="screen">[ 截图：评估进行中的加载状态 ]</div>
+
+<h3>3.5 分图模式的进度面板</h3>
+<p>在「分图评估」模式下，页面会显示实时进度面板：</p>
+<ul>
+  <li><strong>进度条</strong> — 显示整体完成百分比</li>
+  <li><strong>任务列表</strong> — 每张图片一行，显示状态图标</li>
+  <li>状态标识：⏳ 等待中 → 🔄 评估中 → ✅ 完成 / ❌ 失败</li>
+  <li>失败项会显示重试次数（最多自动重试 3 次）</li>
+</ul>
+
+<div class="screen">[ 截图：分图评估进度面板 ]</div>
+
+<h3>3.6 评估完成后</h3>
+<p>评估完成后，页面底部显示结果面板：</p>
+<ul>
+  <li><strong>单次模式：</strong>显示 ✅ 评估完成，点击"查看报告"进入报告页</li>
+  <li><strong>分图模式：</strong>显示成功/失败数量统计，点击"查看全部报告"进入汇总页；如有失败项可点击"🔄 重试失败项"</li>
+</ul>
+
+<h3>3.7 异常处理</h3>
+<p>如果评估失败，页面会显示错误横幅，包含：</p>
+<ul>
+  <li>错误原因说明</li>
+  <li>评估记录 ID（即使失败也会保存）</li>
+  <li>"查看错误详情"按钮 — 可查看原始 AI 响应用于调试</li>
+  <li>重试建议</li>
+</ul>
+
+<p class="warn"><strong>常见失败原因：</strong>AI 服务暂时不可用、API Key 配额耗尽、网络超时。系统内置自动重试机制（最多 3 次），如仍失败请稍后重试。</p>
+
+<!-- ====== 4. REPORT ====== -->
+<h2 class="section">4. 查看评估报告</h2>
+
+<h3>4.1 报告页面结构</h3>
+<p>评估报告包含以下内容区块：</p>
+
+<h4>📷 上传图片展示</h4>
+<p>评估所用的原始图片以缩略图形式展示在报告顶部，方便对照查看。</p>
+
+<h4>📋 总体评估</h4>
+<p>AI 对整体消防安全状况的综合评价，概括主要问题和建议。</p>
+
+<h4>📊 统计卡片</h4>
+<table>
+  <tr><th>指标</th><th>含义</th></tr>
+  <tr><td>✅ 过关项</td><td>符合消防规范的检查项数量</td></tr>
+  <tr><td>⚠️ 不过关项</td><td>存在消防隐患的检查项数量</td></tr>
+  <tr><td>💡 整改建议</td><td>AI 提出的整改措施数量</td></tr>
+</table>
+
+<h4>🔴 不过关项 — 需要整改</h4>
+<p>列出所有不合格的检查项，每项包含：</p>
+<ul>
+  <li><strong>类别标签</strong> — 所属消防规范类别</li>
+  <li><strong>问题标题</strong> — 简要描述发现的问题</li>
+  <li><strong>详细说明</strong> — AI 分析的具体情况</li>
+  <li><strong>法规依据</strong> — 引用的相关法规条款编号</li>
+</ul>
+
+<h4>🟢 过关项 — 符合规范</h4>
+<p>列出所有合格的检查项，格式与不过关项一致，便于全面了解评估结果。</p>
+
+<div class="screen">[ 截图：评估报告页面 ]</div>
+
+<h3>4.2 报告操作</h3>
+<ul>
+  <li><strong>打印报告：</strong>点击"打印报告"按钮，调用浏览器打印功能，可直接打印或另存为 PDF</li>
+  <li><strong>导出 PDF：</strong>点击"导出 PDF"按钮，将报告导出为 PDF 文件</li>
+</ul>
+
+<h3>4.3 评估失败的报告</h3>
+<p>如果某次评估执行失败，报告页面会显示：</p>
+<ul>
+  <li>失败原因的具体错误信息</li>
+  <li>可展开的"原始 AI 响应"调试信息（供技术人员排查）</li>
+  <li>"返回历史"和"重新评估"操作按钮</li>
+</ul>
+
+<h3>4.4 分图评估汇总页</h3>
+<p>分图评估完成后进入汇总页面，以卡片列表展示每张图片的评估结果：</p>
+<ul>
+  <li>每张卡片显示：缩略图（点击可放大）、文件名、风险等级标签</li>
+  <li>合格的报告显示过关/不过关/建议的统计数字</li>
+  <li>失败的卡片显示错误原因和返回重评按钮</li>
+  <li>顶部统计：总图片数、完成数、失败数</li>
+</ul>
+
+<div class="screen">[ 截图：分图评估汇总页面 ]</div>
+
+<!-- ====== 5. HISTORY ====== -->
+<h2 class="section">5. 历史记录</h2>
+
+<p>历史记录页面以表格形式列出所有评估记录，支持分页浏览。</p>
+
+<h3>5.1 列表信息</h3>
+<table>
+  <tr><th>列</th><th>说明</th></tr>
+  <tr><td>评估名称</td><td>报告的标题（失败的报告会标注"失败"标签）</td></tr>
+  <tr><td>评估时间</td><td>评估执行的日期和时间</td></tr>
+  <tr><td>风险等级</td><td>低风险（绿）/ 中风险（黄）/ 高风险（红）/ 评估失败（灰）</td></tr>
+  <tr><td>操作</td><td>"查看报告"链接，点击跳转到报告详情页</td></tr>
+</table>
+
+<div class="screen">[ 截图：历史记录列表页 ]</div>
+
+<h3>5.2 翻页操作</h3>
+<p>每页显示 10 条记录。使用底部的分页控件进行翻页：</p>
+<ul>
+  <li>点击 <strong>‹ / ›</strong> 箭头切换到上/下一页</li>
+  <li>点击<strong>页码数字</strong>直接跳转到指定页</li>
+  <li>当前页高亮显示</li>
+</ul>
+
+<p class="note"><strong>提示：</strong>点击任意一行记录即可跳转到对应的报告详情页。顶部的"共 N 条"显示评估总数量。</p>
+
+<!-- ====== 6. RULES ====== -->
+<h2 class="section">6. 规则管理</h2>
+
+<p>规则管理页面用于维护评估所依据的消防法规和检查标准。支持查看、新增、编辑和删除规则。</p>
+
+<div class="screen">[ 截图：规则管理页面 ]</div>
+
+<h3>6.1 规则列表</h3>
+<p>规则以表格形式展示，包含以下字段：</p>
+<table>
+  <tr><th>列</th><th>说明</th></tr>
+  <tr><td>规则名称</td><td>规则的名称（如"GB 50016 建筑设计防火规范"），下方灰色文字为规则描述</td></tr>
+  <tr><td>类别</td><td>彩色标签显示所属类别</td></tr>
+  <tr><td>来源文档</td><td>对应的法规文件名称及条款编号</td></tr>
+  <tr><td>类型</td><td>"内置"（系统预置，不可删除）或"自定义"（用户添加）</td></tr>
+  <tr><td>操作</td><td>编辑按钮；自定义规则额外显示删除按钮</td></tr>
+</table>
+
+<h3>6.2 类别筛选</h3>
+<p>列表上方提供类别下拉筛选框，可选择查看特定类别的规则，也可选择"全部类别"查看所有规则。</p>
+
+<h3>6.3 新增规则</h3>
+<ol class="steps">
+  <li>点击右上角<strong>"+ 新增规则"</strong>按钮</li>
+  <li>在弹出的表单中填写规则信息</li>
+  <li>点击<strong>"保存"</strong></li>
+</ol>
+
+<h4>表单字段说明：</h4>
+<table>
+  <tr><th>字段</th><th>必填</th><th>说明</th></tr>
+  <tr><td>规则名称</td><td>是</td><td>规则的标题，如法规标准名称</td></tr>
+  <tr><td>上传PDF文档</td><td>否</td><td>上传法规 PDF 文件，系统自动提取文本内容填充到描述和来源文档字段</td></tr>
+  <tr><td>类别</td><td>是</td><td>从6个预设类别中选择</td></tr>
+  <tr><td>描述</td><td>否</td><td>规则涵盖的检查内容和适用范围</td></tr>
+  <tr><td>来源文档</td><td>否</td><td>对应 requirement/ 目录下的文档文件名</td></tr>
+  <tr><td>条款编号</td><td>否</td><td>具体的法规条款编号，如"第5.5.18条"</td></tr>
+</table>
+
+<h3>6.4 PDF 智能解析</h3>
+<p>新增/编辑规则时，可以上传 PDF 格式的法规文档：</p>
+<ol class="steps">
+  <li>点击上传区域，选择 PDF 文件</li>
+  <li>系统自动解析 PDF 文本内容</li>
+  <li>解析后的文本自动填充到"描述"字段</li>
+  <li>文件名自动填充到"来源文档"字段</li>
+</ol>
+<p class="tip"><strong>提示：</strong>PDF 解析功能可大幅减少手动输入。解析后您仍可以手动修改自动填充的内容。</p>
+
+<h3>6.5 编辑与删除</h3>
+<ul>
+  <li><strong>编辑：</strong>点击规则行的"编辑"按钮，在弹出表单中修改后保存</li>
+  <li><strong>删除：</strong>仅自定义规则可删除，点击"删除"按钮后需确认操作。内置规则不可删除</li>
+</ul>
+
+<!-- ====== 7. STATS ====== -->
+<h2 class="section">7. 统计分析</h2>
+
+<p>统计分析页面提供评估数据的可视化总览，帮助管理者了解整体消防安全状况。</p>
+
+<div class="screen">[ 截图：统计分析页面 ]</div>
+
+<h3>7.1 概览卡片</h3>
+<p>页面顶部四个指标卡片展示核心数据：</p>
+<table>
+  <tr><th>指标</th><th>说明</th></tr>
+  <tr><td>📊 评估总次数</td><td>系统累计完成的评估次数</td></tr>
+  <tr><td>📈 整体合规率</td><td>所有评估中合规项占比（百分比）</td></tr>
+  <tr><td>⚠️ 不合规项总数</td><td>累计发现的不合规项数量</td></tr>
+  <tr><td>💡 整改建议总数</td><td>累计提出的整改建议数量</td></tr>
+</table>
+
+<h3>7.2 风险等级分布</h3>
+<p>以进度条形式展示低风险、中风险、高风险评估报告的数量分布，直观反映整体安全态势。</p>
+
+<h3>7.3 不合规项分类分布</h3>
+<p>按消防类别（消防通道、设施器材、电气管理等）展示不合规项的数量和占比，帮助识别问题的集中区域。</p>
+
+<h3>7.4 高频问题排行榜</h3>
+<p>列出出现频次最高的具体问题，标注所属类别和出现次数，帮助管理者聚焦优先整改事项。</p>
+
+<h3>7.5 月度合规率趋势</h3>
+<p>以柱状图形式展示每月合规率变化趋势，可追踪消防安全管理工作的改善效果。</p>
+
+<p class="note"><strong>提示：</strong>统计数据基于系统中所有已完成的评估报告。数据自动更新，无需手动刷新。</p>
+
+<!-- ====== 8. FAQ ====== -->
+<h2 class="section">8. 常见问题</h2>
+
+<h3>Q1: 支持哪些图片格式？</h3>
+<p>支持 JPG、PNG、WebP 等常见图片格式。建议图片清晰度适中，单张不超过 10MB。</p>
+
+<h3>Q2: 一次最多可以上传多少张图片？</h3>
+<p>单次评估模式建议不超过 5 张；分图评估模式不限数量，但评估总耗时与图片数量成正比。</p>
+
+<h3>Q3: 评估失败怎么办？</h3>
+<p>系统会自动重试最多 3 次。如果仍然失败：
+<br>① 检查网络连接是否正常
+<br>② 等待几分钟后重试（可能是 AI 服务暂时拥堵）
+<br>③ 如持续失败，请联系管理员检查 API Key 是否有效或配额是否耗尽</p>
+
+<h3>Q4: 评估报告可以导出吗？</h3>
+<p>可以。报告页面提供"打印报告"和"导出 PDF"两个按钮，支持打印和导出为 PDF 文件。</p>
+
+<h3>Q5: 如何自定义评估规则？</h3>
+<p>进入「规则管理」页面，点击"新增规则"按钮，填写规则信息后保存即可。支持上传 PDF 法规文档自动填充内容。</p>
+
+<h3>Q6: 评估结果准确吗？</h3>
+<p>AI 评估结果基于大语言模型对图片的分析，结合消防法规知识库综合判断。结果<strong>仅供参考</strong>，重要决策建议结合专业消防人员实地检查。</p>
+
+<h3>Q7: 忘记密码怎么办？</h3>
+<p>请联系系统管理员重置密码。账号和密码由管理员在服务器配置中统一管理。</p>
+
+<h3>Q8: 系统支持移动端吗？</h3>
+<p>当前版本针对 PC 端浏览器（Chrome / Edge）优化。移动端浏览器可以访问但体验可能不佳。</p>
+
+<div class="footer-note">
+  SafeEvaluate v1.0 · 消防安全 AI 评估系统<br>
+  如有疑问，请联系系统管理员
+</div>
+
+</div><!-- .container -->
+</body>
+</html>

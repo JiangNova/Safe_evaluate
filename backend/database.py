@@ -11,7 +11,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime
 
-from .config import REPORT_STORAGE_DIR
+from .config import REPORT_STORAGE_DIR, IMAGE_STORAGE_DIR
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "reports.db")
 _MIGRATION_FLAG = os.path.join(os.path.dirname(__file__), "data", ".migration_done")
@@ -70,6 +70,19 @@ def init_db():
 
             CREATE INDEX IF NOT EXISTS idx_reports_status
                 ON reports(status);
+
+            CREATE TABLE IF NOT EXISTS report_images (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                report_id       TEXT NOT NULL,
+                image_index     INTEGER NOT NULL DEFAULT 0,
+                filename        TEXT NOT NULL DEFAULT '',
+                mime_type       TEXT NOT NULL DEFAULT 'image/png',
+                file_path       TEXT NOT NULL DEFAULT '',
+                UNIQUE(report_id, image_index)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_report_images_report_id
+                ON report_images(report_id);
             """
         )
 
@@ -324,3 +337,50 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
         "error_message": row["error_message"],
         "created_at": row["created_at"],
     }
+
+
+# ---------------------------------------------------------------------------
+# Image storage
+# ---------------------------------------------------------------------------
+
+
+def save_report_images(report_id: str, images: list[dict]) -> None:
+    """Persist image records for a report.
+
+    Args:
+        report_id: The report these images belong to.
+        images: List of dicts with keys: filename, mime_type, file_path.
+    """
+    with _get_db() as conn:
+        for idx, img in enumerate(images):
+            conn.execute(
+                """INSERT OR REPLACE INTO report_images
+                   (report_id, image_index, filename, mime_type, file_path)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    report_id,
+                    idx,
+                    img.get("filename", ""),
+                    img.get("mime_type", "image/png"),
+                    img.get("file_path", ""),
+                ),
+            )
+
+
+def get_report_images(report_id: str) -> list[dict]:
+    """Return image metadata for a report, ordered by image_index."""
+    with _get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM report_images WHERE report_id = ? ORDER BY image_index ASC",
+            (report_id,),
+        ).fetchall()
+
+    return [
+        {
+            "index": row["image_index"],
+            "filename": row["filename"],
+            "mime_type": row["mime_type"],
+            "file_path": row["file_path"],
+        }
+        for row in rows
+    ]

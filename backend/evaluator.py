@@ -458,6 +458,7 @@ async def evaluate_images(
 
     errors: list[str] = []
     raw_content: str | None = None
+    primary_raw: str | None = None  # Bug B: preserve primary raw even if parse fails
 
     # ---- Primary API (DashScope / Qwen) ----
     if QWEN_API_KEY:
@@ -476,12 +477,32 @@ async def evaluate_images(
             _log_raw_response(api_result, "PRIMARY")
             # Parse the nested response: choices[0].message.content → structured dict
             raw_content = api_result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            primary_raw = raw_content  # Bug B: preserve for debugging if backup also fails
             # --- DEBUG: dump raw content to file for diagnosis ---
             _dump_debug(raw_content, api_result)
             # --- END DEBUG ---
             if not raw_content:
                 raise RuntimeError("AI returned empty response content")
-            return _parse_response(raw_content), raw_content
+
+            # Bug C: detect truncated output via finish_reason
+            finish_reason = api_result.get("choices", [{}])[0].get("finish_reason", "")
+            if finish_reason == "length":
+                _safe_print(
+                    "[API] PRIMARY: finish_reason=length (output truncated by token limit)",
+                    file=sys.stderr,
+                )
+
+            # Bug A: catch ValueError so backup API gets a chance on parse failure
+            try:
+                return _parse_response(raw_content), raw_content
+            except ValueError as e:
+                _safe_print(
+                    f"[API] PRIMARY: JSON parse failed ({e}), will try backup API",
+                    file=sys.stderr,
+                )
+                errors.append(f"Primary API JSON parse failed: {str(e)[:200]}")
+                # Fall through to backup — raw_content preserved in primary_raw
+
         except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as e:
             msg = f"Primary API failed: {e}"
             _safe_print(f"[API] {msg}", file=sys.stderr)
@@ -512,7 +533,26 @@ async def evaluate_images(
             # --- END DEBUG ---
             if not raw_content:
                 raise RuntimeError("Backup AI returned empty response content")
-            return _parse_response(raw_content), raw_content
+
+            # Bug C: detect truncated output via finish_reason
+            finish_reason = api_result.get("choices", [{}])[0].get("finish_reason", "")
+            if finish_reason == "length":
+                _safe_print(
+                    "[API] BACKUP: finish_reason=length (output truncated by token limit)",
+                    file=sys.stderr,
+                )
+
+            # Bug A: catch ValueError — but this is the last resort, so re-raise with raw content
+            try:
+                return _parse_response(raw_content), raw_content
+            except ValueError as e:
+                _safe_print(
+                    f"[API] BACKUP: JSON parse also failed ({e})",
+                    file=sys.stderr,
+                )
+                errors.append(f"Backup API JSON parse failed: {str(e)[:200]}")
+                # Both APIs failed to produce parseable JSON — will raise below
+
         except (httpx.HTTPStatusError, httpx.RequestError, httpx.TimeoutException) as e:
             msg = f"Backup API also failed: {e}"
             _safe_print(f"[API] {msg}", file=sys.stderr)
@@ -521,9 +561,19 @@ async def evaluate_images(
         _safe_print("[API] BACKUP key not configured, skipping", file=sys.stderr)
 
     # ---- Both failed ----
+    # Bug B: include raw AI response in error for post-mortem debugging
+    debug_raw = raw_content or primary_raw or ""
+    debug_section = ""
+    if debug_raw:
+        debug_section = (
+            "\n--- RAW AI RESPONSE (first 1000 chars) ---\n"
+            + debug_raw[:1000]
+            + "\n--- END RAW ---"
+        )
     raise RuntimeError(
         "所有API通路均调用失败，请稍后重试。\n"
         + "\n".join(f"  - {e}" for e in errors)
+        + debug_section
     )
 
 

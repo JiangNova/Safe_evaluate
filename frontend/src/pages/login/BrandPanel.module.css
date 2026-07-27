@@ -50,10 +50,11 @@
 }
 
 .title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.5px;
+  line-height: 1.4;
 }
 
 .divider {
