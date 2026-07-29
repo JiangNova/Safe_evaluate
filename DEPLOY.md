@@ -251,15 +251,30 @@ docker-compose down && docker-compose up -d
 ### 更新代码
 
 ```bash
-# 本地打包
-tar -czf update.tar.gz backend/ frontend/dist/ requirement/
+# 本地先构建并验证两个前端
+powershell -ExecutionPolicy Bypass -File scripts/build-frontends.ps1
+
+# 打包代码和两个前端；不包含本地数据、真实 .env 与法规目录
+tar --exclude=backend/data --exclude=.env -czf update.tar.gz \
+  backend/ frontend/dist/ website/dist/ nginx.conf docker-compose.yml
 scp update.tar.gz root@ECS:/opt/safe-evaluate/
 
 # 服务器上
 cd /opt/safe-evaluate
+# 解压前必须先按 docs/deployment/agulab-release-checklist.md 完成备份
 tar -xzf update.tar.gz
 docker-compose down && docker-compose up -d --build
 ```
+
+生产访问路径：
+
+- AGULAB 官网：`/`
+- 风险评估平台：`/evaluate`
+- 后端接口：`/api/*`
+
+更新包不得包含或覆盖服务器的 `.env`、`backend/data/` 和
+`requirement/`。出现异常时按照
+`docs/deployment/agulab-rollback-checklist.md` 恢复旧配置与构建产物。
 
 ### 备份数据
 

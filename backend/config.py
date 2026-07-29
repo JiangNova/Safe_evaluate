@@ -35,10 +35,22 @@ REPORT_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "reports")
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 # Auth
-USERS_JSON = os.getenv("APP_USERS", '{"110Csust@": "110Csust@"}')
-USERS = _json.loads(USERS_JSON)
-JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production-please")
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+USERS_JSON = os.getenv("APP_USERS", "{}")
+USERS = _json.loads(USERS_JSON) if USERS_JSON else {}
+JWT_SECRET = os.getenv("JWT_SECRET", "")
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+
+if APP_ENV == "production":
+    _missing_settings = []
+    if not USERS:
+        _missing_settings.append("APP_USERS")
+    if not JWT_SECRET:
+        _missing_settings.append("JWT_SECRET")
+    if _missing_settings:
+        raise RuntimeError(
+            f"Missing required production settings: {', '.join(_missing_settings)}"
+        )
 
 # CORS
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")

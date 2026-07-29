@@ -56,7 +56,7 @@ API 文档自动生成：
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-### 3. 启动前端（端口 3000）
+### 3. 启动风险评估平台（端口 3000）
 
 ```bash
 cd frontend
@@ -64,13 +64,34 @@ npm install
 npm run dev
 ```
 
-访问: http://localhost:3000
+访问: http://127.0.0.1:3000/evaluate
 
-### 4. 登录
+### 4. 启动 AGULAB 官网（端口 5173）
 
-默认账号：
-- 用户名: `admin`  密码: `SafeEvaluate2026!`
-- 用户名: `fireadmin`  密码: `FireSafety2026!`
+```bash
+cd website
+npm install
+npm run dev
+```
+
+开发地址：`http://127.0.0.1:5173/website-static/`
+
+生产环境中，Nginx 会将官网放在 `/`，风险评估平台放在
+`/evaluate`，后端接口保留为 `/api/*`。
+
+完成两个前端构建后，可在不安装 Docker 的电脑上预览同域路由：
+
+```bash
+python scripts/serve-integration.py --port 8080
+```
+
+访问 `http://127.0.0.1:8080/`。该脚本仅监听本机，并将 `/api/*`
+转发到本地 8000 端口。
+
+### 5. 登录
+
+账号、密码和 JWT 密钥必须在本地或服务器 `.env` 中配置。项目不再提供
+可直接用于生产环境的默认登录凭据。
 
 ## 使用流程
 
@@ -102,7 +123,8 @@ npm run dev
 
 ## 技术栈
 
-- **前端**: React 18 + Vite + React Router 6 + CSS Modules
+- **官网**: React 19 + TypeScript + Vite
+- **风险评估平台**: React 18 + Vite + React Router 7 + CSS Modules
 - **后端**: Python FastAPI + Pydantic + python-docx
 - **AI**: 阿里云千问 Qwen3.7-vl-plus（视觉大模型）
 - **存储**: JSON 文件存储
