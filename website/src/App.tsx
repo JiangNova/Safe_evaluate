@@ -3,6 +3,7 @@ import { SiteFooter } from './components/SiteFooter'
 import { SiteHeader } from './components/SiteHeader'
 import { navItems } from './content/siteContent'
 import { useRouter } from './lib/router-context'
+import { AiEmpowermentPage } from './pages/AiEmpowermentPage'
 import { HomePage } from './pages/HomePage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
@@ -28,6 +29,8 @@ export default function App() {
 
   if (pathname === '/') {
     page = <HomePage />
+  } else if (pathname === '/ai-empowerment') {
+    page = <AiEmpowermentPage />
   } else if (currentPage) {
     page = (
       <PlaceholderPage

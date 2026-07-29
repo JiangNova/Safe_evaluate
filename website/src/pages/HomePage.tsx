@@ -6,7 +6,6 @@ import {
   researchPillars,
 } from '../content/siteContent'
 import { AppLink } from '../lib/router'
-import { getPlatformUrl } from '../lib/external-link'
 import styles from './HomePage.module.css'
 
 function ArrowIcon() {
@@ -87,12 +86,6 @@ export function HomePage() {
                 进入{pillar.title}研究
                 <ArrowIcon />
               </AppLink>
-              {pillar.path === '/ai-empowerment' && (
-                <a href={getPlatformUrl()} className={styles.platformEntry}>
-                  体验消防安全风险评估
-                  <ArrowIcon />
-                </a>
-              )}
             </article>
           ))}
         </div>

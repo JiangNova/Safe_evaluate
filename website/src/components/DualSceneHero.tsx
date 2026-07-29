@@ -1,5 +1,4 @@
 import { AppLink } from '../lib/router'
-import { getPlatformUrl } from '../lib/external-link'
 import styles from './DualSceneHero.module.css'
 
 export function DualSceneHero() {
@@ -91,10 +90,6 @@ export function DualSceneHero() {
           <AppLink className="button button--glass" to="/ai-empowerment">
             了解AI赋能方案
           </AppLink>
-          <a className="button button--glass" href={getPlatformUrl()}>
-            进入风险评估平台
-            <span aria-hidden="true">↗</span>
-          </a>
           <AppLink className="button button--text" to="/collaboration">
             合作共赢
             <span aria-hidden="true">→</span>

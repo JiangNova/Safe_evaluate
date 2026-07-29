@@ -105,6 +105,42 @@ export const researchPillars = [
   },
 ] as const
 
+export const aiCapabilities = [
+  {
+    code: 'PERCEPTION',
+    title: '多模态感知',
+    description: '融合图片、视频、图纸与现场信息，建立对复杂行业场景的结构化理解。',
+  },
+  {
+    code: 'KNOWLEDGE',
+    title: '行业知识增强',
+    description: '连接法规、标准与专业资料，让模型判断能够追溯到可靠的行业依据。',
+  },
+  {
+    code: 'REPORTING',
+    title: '智能报告生成',
+    description: '将识别结果整理为清晰、规范、可复核的评估报告与业务文书。',
+  },
+  {
+    code: 'ASSISTANCE',
+    title: '辅助决策',
+    description: '围绕风险、优先级与整改措施，为专业人员提供可操作的决策支持。',
+  },
+] as const
+
+export const aiProjects = [
+  {
+    index: '01',
+    status: '可在线体验',
+    eyebrow: 'Fire Safety Intelligence',
+    title: '消防安全风险评估',
+    description:
+      '上传消防现场照片或图纸，结合检查依据识别风险，并生成结构化评估结果与检查文书。',
+    points: ['多图与图纸分析', '消防风险识别', '法规依据关联', '评估报告与检查文书生成'],
+    platform: true,
+  },
+] as const
+
 export const capabilities = [
   {
     code: 'PERCEPTION',
