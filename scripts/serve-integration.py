@@ -1,4 +1,4 @@
-"""Local same-origin preview for AGULAB + SafeEvaluate.
+"""Local same-origin preview for AGULAB and both evaluation platforms.
 
 This helper mirrors the production Nginx path split without changing the
 online server. It binds to localhost only and proxies /api/* to port 8000.
@@ -16,15 +16,36 @@ from urllib.request import Request, urlopen
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 WEBSITE_DIST = (PROJECT_ROOT / "website" / "dist").resolve()
-PLATFORM_DIST = (PROJECT_ROOT / "frontend" / "dist").resolve()
-PLATFORM_ROUTES = {
-    "login",
-    "evaluate",
-    "history",
-    "report",
-    "rules",
-    "stats",
-}
+PUBLIC_DIST = (PROJECT_ROOT / "frontend-public" / "dist").resolve()
+TIANXIN_DIST = (PROJECT_ROOT / "frontend" / "dist").resolve()
+
+
+def classify_path(path: str) -> tuple[str, str]:
+    """Return the frontend build and relative file for a request path."""
+    clean_path = path.split("?", 1)[0]
+    if clean_path == "/evaluate" or clean_path.startswith("/evaluate/"):
+        relative = clean_path.removeprefix("/evaluate").lstrip("/")
+        if relative.startswith("assets/"):
+            return ("public", relative)
+        return ("public", "index.html")
+    if (
+        clean_path == "/evaluate_tianxin"
+        or clean_path.startswith("/evaluate_tianxin/")
+    ):
+        relative = clean_path.removeprefix("/evaluate_tianxin").lstrip("/")
+        if not relative.startswith("assets/"):
+            relative = "index.html"
+        return ("tianxin", relative or "index.html")
+    return ("website", "index.html")
+
+
+def validate_build_outputs(
+    directories=(WEBSITE_DIST, PUBLIC_DIST, TIANXIN_DIST),
+) -> None:
+    """Stop startup when any frontend build is unavailable."""
+    for directory in directories:
+        if not (directory / "index.html").is_file():
+            raise SystemExit(f"Missing build output: {directory}")
 
 
 class IntegrationHandler(BaseHTTPRequestHandler):
@@ -57,29 +78,35 @@ class IntegrationHandler(BaseHTTPRequestHandler):
             self._serve_file(WEBSITE_DIST / relative, WEBSITE_DIST, send_body)
             return
 
-        if path.startswith("/assets/"):
-            relative = path.removeprefix("/assets/")
-            self._serve_file(
-                PLATFORM_DIST / "assets" / relative,
-                PLATFORM_DIST,
-                send_body,
-            )
+        if path == "/evaluate":
+            self._redirect("/evaluate/")
             return
 
-        first_segment = path.lstrip("/").split("/", 1)[0]
-        if first_segment in PLATFORM_ROUTES:
-            self._serve_file(
-                PLATFORM_DIST / "index.html",
-                PLATFORM_DIST,
-                send_body,
-            )
+        if path == "/evaluate_tianxin":
+            self._redirect("/evaluate_tianxin/")
+            return
+
+        application, relative = classify_path(path)
+        if application == "public":
+            self._serve_file(PUBLIC_DIST / relative, PUBLIC_DIST, send_body)
+            return
+        if application == "tianxin":
+            self._serve_file(TIANXIN_DIST / relative, TIANXIN_DIST, send_body)
             return
 
         requested = WEBSITE_DIST / path.lstrip("/")
-        if path != "/" and requested.is_file():
-            self._serve_file(requested, WEBSITE_DIST, send_body)
-            return
-        self._serve_file(WEBSITE_DIST / "index.html", WEBSITE_DIST, send_body)
+        candidate = (
+            requested
+            if path != "/" and requested.is_file()
+            else WEBSITE_DIST / "index.html"
+        )
+        self._serve_file(candidate, WEBSITE_DIST, send_body)
+
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def _serve_file(self, candidate, allowed_root, send_body):
         resolved = candidate.resolve()
@@ -146,9 +173,7 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     args = parser.parse_args()
 
-    for directory in (WEBSITE_DIST, PLATFORM_DIST):
-        if not (directory / "index.html").is_file():
-            raise SystemExit(f"Missing build output: {directory}")
+    validate_build_outputs()
 
     server = ThreadingHTTPServer(("127.0.0.1", args.port), IntegrationHandler)
     print(f"Integrated preview: http://127.0.0.1:{args.port}")
