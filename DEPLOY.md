@@ -139,19 +139,21 @@ EOF
 
 ---
 
-## 第七步：构建前端并上传
+## 第七步：构建三个前端并上传
 
-在**本地电脑**上构建：
+在**本地电脑**的项目根目录运行统一脚本。脚本会依次检查并构建官网、
+公开自动安全评估平台和内部定制评判平台：
 
 ```powershell
-cd d:\myself\Safe_evaluate\frontend
-npm install
-npm run build
+cd d:\myself\Safe_evaluate
+powershell -ExecutionPolicy Bypass -File scripts/build-frontends.ps1
 ```
 
 上传构建产物到服务器：
 
 ```powershell
+scp -r website/dist root@你的公网IP:/opt/safe-evaluate/website/
+scp -r frontend-public/dist root@你的公网IP:/opt/safe-evaluate/frontend-public/
 scp -r frontend/dist root@你的公网IP:/opt/safe-evaluate/frontend/
 ```
 
@@ -176,8 +178,9 @@ docker-compose logs -f backend
 # 后端健康检查
 curl http://localhost:8000/api/health
 
-# 前端访问：浏览器打开 http://你的公网IP
-# 应该能看到登录页面
+# 官网：浏览器打开 http://你的公网IP/
+# 公开自动安全评估平台：http://你的公网IP/evaluate
+# 天心区定制评判平台：http://你的公网IP/evaluate_tianxin
 ```
 
 ---
@@ -251,15 +254,32 @@ docker-compose down && docker-compose up -d
 ### 更新代码
 
 ```bash
-# 本地打包
-tar -czf update.tar.gz backend/ frontend/dist/ requirement/
+# 本地先构建并验证三个前端
+powershell -ExecutionPolicy Bypass -File scripts/build-frontends.ps1
+
+# 打包代码和三个前端；不包含本地数据、真实 .env 与法规目录
+tar --exclude=backend/data --exclude=.env -czf update.tar.gz \
+  backend/ frontend/dist/ frontend-public/dist/ website/dist/ \
+  nginx.conf docker-compose.yml
 scp update.tar.gz root@ECS:/opt/safe-evaluate/
 
 # 服务器上
 cd /opt/safe-evaluate
+# 解压前必须先按 docs/deployment/agulab-release-checklist.md 完成备份
 tar -xzf update.tar.gz
 docker-compose down && docker-compose up -d --build
 ```
+
+生产访问路径：
+
+- AGULAB 官网：`/`
+- 公开自动安全评估平台：`/evaluate`
+- 天心区定制评判平台：`/evaluate_tianxin`
+- SafeEvaluate 后端接口：`/api/*`
+
+更新包不得包含或覆盖服务器的 `.env`、`backend/data/` 和
+`requirement/`。出现异常时按照
+`docs/deployment/agulab-rollback-checklist.md` 恢复旧配置与构建产物。
 
 ### 备份数据
 

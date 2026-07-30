@@ -43,6 +43,14 @@ def _get_db():
 # ---------------------------------------------------------------------------
 
 
+def _migrate_add_template_columns(conn: sqlite3.Connection) -> None:
+    """Add inspection_record_json and correction_notice_json columns if missing."""
+    existing = {row[1] for row in conn.execute("PRAGMA table_info(reports)")}
+    for col_name in ("inspection_record_json", "correction_notice_json"):
+        if col_name not in existing:
+            conn.execute(f"ALTER TABLE reports ADD COLUMN {col_name} TEXT")
+
+
 def init_db():
     """Create tables and indexes if they don't exist, then run migration."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -60,6 +68,8 @@ def init_db():
                 rules           TEXT DEFAULT '[]',
                 stats_json      TEXT DEFAULT '{"compliant":0,"nonCompliant":0,"suggestions":0}',
                 findings_json   TEXT DEFAULT '[]',
+                inspection_record_json TEXT,
+                correction_notice_json TEXT,
                 raw_response    TEXT,
                 error_message   TEXT,
                 created_at      TEXT NOT NULL
@@ -85,6 +95,9 @@ def init_db():
                 ON report_images(report_id);
             """
         )
+
+        # Migration: add new columns for template-based output (July 2026)
+        _migrate_add_template_columns(conn)
 
     # Migrate legacy JSON files (idempotent)
     try:
@@ -210,9 +223,10 @@ def save_report(report_data: dict) -> str:
         conn.execute(
             """INSERT OR REPLACE INTO reports
                (id, status, title, date, filename, overall_assessment,
-                rules, stats_json, findings_json, raw_response,
+                rules, stats_json, findings_json, inspection_record_json,
+                correction_notice_json, raw_response,
                 error_message, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 report_id,
                 report_data.get("status", "success"),
@@ -223,6 +237,8 @@ def save_report(report_data: dict) -> str:
                 json.dumps(rules, ensure_ascii=False),
                 json.dumps(stats, ensure_ascii=False),
                 json.dumps(findings, ensure_ascii=False),
+                json.dumps(report_data.get("inspection_record"), ensure_ascii=False) if report_data.get("inspection_record") else None,
+                json.dumps(report_data.get("correction_notice"), ensure_ascii=False) if report_data.get("correction_notice") else None,
                 report_data.get("raw_response"),
                 report_data.get("error_message"),
                 now,
@@ -323,6 +339,15 @@ def delete_report(report_id: str) -> bool:
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
     """Convert a sqlite3.Row to a plain dict with deserialized JSON fields."""
+    def _parse_json(val):
+        """Parse JSON string to dict, returning None for empty/null values."""
+        if val is None:
+            return None
+        try:
+            return json.loads(val)
+        except (json.JSONDecodeError, TypeError):
+            return None
+
     return {
         "id": row["id"],
         "status": row["status"],
@@ -333,6 +358,8 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
         "rules": json.loads(row["rules"]),
         "stats": json.loads(row["stats_json"]),
         "findings": json.loads(row["findings_json"]),
+        "inspection_record": _parse_json(row["inspection_record_json"]),
+        "correction_notice": _parse_json(row["correction_notice_json"]),
         "raw_response": row["raw_response"],
         "error_message": row["error_message"],
         "created_at": row["created_at"],

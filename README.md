@@ -21,7 +21,9 @@ Safe_evaluate/
 │   ├── document_parser.py       # 解析 requirement/ 下的法规文档
 │   ├── prompts.py               # 评估提示词模板
 │   └── data/reports/            # 报告存储目录
-├── frontend/                    # React + Vite 前端
+├── website/                     # React + Vite AGULAB 官网
+├── frontend-public/             # 备案公开版自动安全评估平台
+├── frontend/                    # 已有的天心区定制评判平台
 │   └── src/...
 ├── setup_backend.bat            # 后端一键安装脚本
 ├── start_backend.bat            # 后端启动脚本
@@ -42,37 +44,83 @@ pip install fastapi uvicorn[standard] python-multipart python-docx httpx pydanti
 pip install fastapi uvicorn[standard] python-multipart python-docx httpx pydantic PyJWT -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
 ```
 
-### 2. 启动后端（端口 8000）
+### 2. 启动完整本地环境（推荐）
 
-```bash
-# 方式一：使用启动脚本
-start_backend.bat
+在项目根目录执行：
 
-# 方式二：手动启动
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
-API 文档自动生成：
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+脚本会构建并测试三个前端、复用或启动后端、选择可用的本地预览端口，
+然后自动打开官网。终端会打印最终入口：
 
-### 3. 启动前端（端口 3000）
+- `/`：AGULAB 官网
+- `/evaluate/`：公开自动安全评估平台
+- `/evaluate_tianxin/`：天心区消防安全评估系统
+- `/api/health`：后端健康检查
 
-```bash
-cd frontend
-npm install
+默认从 8080 端口开始选择。端口被占用时，脚本不会结束占用进程，而会自动
+选择后续可用端口。再次启动且构建产物已是最新时，可使用 `-SkipBuild`；
+不希望自动打开浏览器时，可使用 `-NoBrowser`。按 `Ctrl+C` 停止本次启动的
+本地服务。
+
+生产环境与本地完整预览使用相同的路径结构：
+
+| 路径 | 服务 |
+|------|------|
+| `/` | AGULAB 官网 |
+| `/evaluate/` | 公开自动安全评估平台 |
+| `/evaluate_tianxin/` | 天心区定制评判平台 |
+| `/api/*` | SafeEvaluate 后端接口 |
+
+### 3. 高级：单应用开发
+
+仅在独立开发某个应用时分别运行服务：
+
+```powershell
+# 后端：端口 8000
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+
+# 天心区定制平台：进入 frontend 后运行
+npm run dev
+
+# 公开评估平台：进入 frontend-public 后运行
+npm run dev
+
+# AGULAB 官网：进入 website 后运行
 npm run dev
 ```
 
-访问: http://localhost:3000
+单独的 Vite 开发或 Preview 服务只适用于组件开发，不实现生产环境的同域
+路径分流，不能用于验证官网到 `/evaluate/` 或 `/evaluate_tianxin/` 的完整
+跳转。跨应用联调始终使用 `scripts/start-local.ps1`。
+
+API 文档：
+
+- Swagger UI：`http://127.0.0.1:8000/docs`
+- ReDoc：`http://127.0.0.1:8000/redoc`
+
+`frontend-public` 提供无需登录的一次性评估流程，可上传材料、选择公开规则、
+调用 AI 并查看本次报告；它不提供历史报告列表、统计或规则管理。需要登录的
+内部定制平台仍位于 `frontend`。
 
 ### 4. 登录
 
-默认账号：
-- 用户名: `admin`  密码: `SafeEvaluate2026!`
-- 用户名: `fireadmin`  密码: `FireSafety2026!`
+账号、密码和 JWT 密钥必须在本地或服务器 `.env` 中配置。项目不再提供
+可直接用于生产环境的默认登录凭据。
 
-## 使用流程
+## 公开版使用流程
+
+1. **新建评估** → 上传现场照片、图纸或 PDF
+2. **选择评估规则** → 可选公开的通用安全标准
+3. **开始评估** → 系统调用视觉大模型进行分析
+4. **查看本次报告** → 查看符合项、风险项和整改建议
+
+公开版不会提供历史报告列表。以下登录和管理功能仅用于
+`/evaluate_tianxin/` 内部定制平台。
+
+## 内部版使用流程
 
 1. **登录** → 进入系统
 2. **新建评估** → 上传消防现场照片/图纸（支持 JPG/PNG/GIF/BMP/WebP/PDF）
@@ -102,7 +150,9 @@ npm run dev
 
 ## 技术栈
 
-- **前端**: React 18 + Vite + React Router 6 + CSS Modules
+- **官网**: React 19 + TypeScript + Vite
+- **公开自动安全评估平台**: React 18 + React Router 7 + Vite + CSS Modules
+- **天心区定制评判平台**: React 18 + Vite + React Router 7 + CSS Modules
 - **后端**: Python FastAPI + Pydantic + python-docx
 - **AI**: 阿里云千问 Qwen3.7-vl-plus（视觉大模型）
 - **存储**: JSON 文件存储

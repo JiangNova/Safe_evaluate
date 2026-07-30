@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getReport } from '../../services/api';
 import StatCard from './StatCard';
 import FindingItem from './FindingItem';
+import InspectionRecord from './InspectionRecord';
+import CorrectionNotice from './CorrectionNotice';
 import Button from '../../components/ui/Button';
 import styles from './ReportPage.module.css';
 
@@ -206,6 +208,10 @@ export default function ReportPage() {
           <div className={styles.empty}>暂无详细评估数据</div>
         )}
       </div>
+
+      {/* Template-based official documents */}
+      <InspectionRecord data={data.inspection_record} />
+      <CorrectionNotice data={data.correction_notice} />
 
       <div className={styles.actions}>
         <Button variant="secondary" onClick={() => window.print()}>

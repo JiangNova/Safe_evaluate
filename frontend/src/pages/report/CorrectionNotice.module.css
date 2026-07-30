@@ -1,0 +1,140 @@
+.container {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.sectionHeader {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sectionHeader h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.body {
+  padding: 16px 24px;
+}
+
+.cleanNotice {
+  text-align: center;
+  padding: 20px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: #166534;
+}
+
+.noticeMeta {
+  margin-bottom: 12px;
+}
+
+.noticeNumber {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'SimSun', '宋体', serif;
+}
+
+.noticeTo {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.noticeIntro {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.8;
+  margin-bottom: 14px;
+  text-indent: 2em;
+}
+
+.violationList {
+  margin-bottom: 14px;
+  padding-left: 2em;
+}
+
+.violationItem {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.checkbox {
+  color: #dc2626;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.specificSection {
+  margin-bottom: 14px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.specificLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 6px;
+}
+
+.specificText {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  font-family: inherit;
+}
+
+.noticeFooter {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.noticeFooter p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.dateLine {
+  text-align: right;
+  font-size: 13px;
+  color: var(--text-primary);
+  padding-right: 20px;
+}
+
+.copyHint {
+  text-align: center;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 16px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e7eb;
+}

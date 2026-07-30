@@ -1,0 +1,365 @@
+.hero {
+  position: relative;
+  min-height: 100svh;
+  padding: calc(var(--header-height) + 84px) 24px 78px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  color: #fff;
+  background: #08131c;
+}
+
+.image,
+.vignette,
+.grid,
+.dataLayer {
+  position: absolute;
+  inset: 0;
+}
+
+.image {
+  z-index: -5;
+  background:
+    linear-gradient(90deg, rgba(4, 12, 18, 0.08), rgba(4, 12, 18, 0.18)),
+    url('../assets/agulab-hero-dual-scene-v1.webp') center / cover no-repeat;
+  animation: reveal 1.4s ease both;
+}
+
+.vignette {
+  z-index: -4;
+  background:
+    linear-gradient(180deg, rgba(5, 12, 17, 0.55), transparent 23%, transparent 66%, rgba(5, 12, 17, 0.88)),
+    radial-gradient(circle at center, transparent 0 16%, rgba(2, 9, 14, 0.2) 46%, rgba(2, 8, 12, 0.58) 100%);
+}
+
+.grid {
+  z-index: -3;
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(106, 221, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(106, 221, 255, 0.1) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black 0, transparent 72%);
+}
+
+.dataLayer {
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+.flowPath {
+  stroke-dasharray: 16 18;
+  animation: dash 10s linear infinite;
+}
+
+.flowPathSecondary {
+  opacity: 0.45;
+  stroke-dasharray: 5 12;
+  animation: dash 16s linear infinite reverse;
+}
+
+.node circle:first-child {
+  fill: var(--gold);
+  filter: drop-shadow(0 0 8px var(--gold));
+}
+
+.nodePulse {
+  fill: none;
+  stroke: rgba(255, 208, 114, 0.6);
+  stroke-width: 1;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 2.8s ease-out infinite;
+}
+
+.content {
+  width: min(780px, calc(100vw - 48px));
+  text-align: center;
+  text-shadow: 0 3px 24px rgba(0, 0, 0, 0.5);
+}
+
+.kicker {
+  margin-bottom: 22px;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  animation: rise 700ms 200ms ease both;
+}
+
+.content h1 {
+  margin-bottom: 26px;
+  font-size: clamp(54px, 7.1vw, 108px);
+  line-height: 0.98;
+  letter-spacing: -0.075em;
+  animation: rise 800ms 260ms ease both;
+}
+
+.description {
+  max-width: 700px;
+  margin: 0 auto;
+  color: rgba(240, 246, 248, 0.85);
+  font-size: clamp(14px, 1.2vw, 17px);
+  line-height: 1.85;
+  animation: rise 800ms 340ms ease both;
+}
+
+.actions {
+  margin-top: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  animation: rise 800ms 440ms ease both;
+}
+
+.racingHud {
+  position: absolute;
+  bottom: 72px;
+  left: max(24px, calc((100vw - 1400px) / 2));
+  display: grid;
+  color: rgba(182, 231, 247, 0.88);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+.racingHud strong {
+  margin-top: 4px;
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.racingHud small {
+  margin-top: 4px;
+  color: rgba(113, 216, 250, 0.72);
+  font-size: 8px;
+}
+
+.detection {
+  position: absolute;
+  right: max(56px, calc((100vw - 1300px) / 2));
+  bottom: 172px;
+  width: 170px;
+  height: 245px;
+}
+
+.detection i {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: var(--gold);
+  border-style: solid;
+  filter: drop-shadow(0 0 5px rgba(239, 179, 63, 0.65));
+}
+
+.cornerOne {
+  top: 0;
+  left: 0;
+  border-width: 2px 0 0 2px;
+}
+
+.cornerTwo {
+  top: 0;
+  right: 0;
+  border-width: 2px 2px 0 0;
+}
+
+.cornerThree {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 2px 2px;
+}
+
+.cornerFour {
+  right: 0;
+  bottom: 0;
+  border-width: 0 2px 2px 0;
+}
+
+.detectionLabel {
+  position: absolute;
+  top: -25px;
+  left: 0;
+  padding: 5px 8px;
+  color: #111b21;
+  background: var(--gold);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.scrollCue {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  transform: translateX(-50%);
+}
+
+.scrollCue span {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(var(--gold), transparent);
+  animation: scroll 1.8s ease-in-out infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -220;
+  }
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: scale(1.035);
+  }
+}
+
+@keyframes scroll {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scaleY(0.55);
+    transform-origin: top;
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@media (max-width: 980px) {
+  .hero {
+    padding-top: calc(var(--header-height) + 64px);
+  }
+
+  .image {
+    background-position: 48% center;
+  }
+
+  .racingHud,
+  .detection {
+    opacity: 0.7;
+  }
+
+  .detection {
+    right: 34px;
+    bottom: 140px;
+    width: 125px;
+    height: 190px;
+  }
+}
+
+@media (max-width: 720px) {
+  .hero {
+    min-height: 860px;
+    padding: calc(var(--header-height) + 62px) 16px 90px;
+    align-items: start;
+  }
+
+  .image {
+    background: #061119;
+  }
+
+  .image::before,
+  .image::after {
+    position: absolute;
+    top: 0;
+    width: 66%;
+    height: 660px;
+    content: '';
+    background-image: url('../assets/agulab-hero-dual-scene-v1.webp');
+    background-repeat: no-repeat;
+    background-size: auto 660px;
+    opacity: 0.86;
+  }
+
+  .image::before {
+    left: 0;
+    background-position: left center;
+    mask-image: linear-gradient(90deg, black 35%, transparent 100%);
+  }
+
+  .image::after {
+    right: 0;
+    background-position: right center;
+    mask-image: linear-gradient(270deg, black 35%, transparent 100%);
+  }
+
+  .vignette {
+    background:
+      linear-gradient(180deg, rgba(4, 11, 16, 0.1), rgba(4, 11, 16, 0.3) 38%, rgba(4, 11, 16, 0.96) 78%),
+      radial-gradient(circle at center 30%, rgba(4, 11, 16, 0.18), rgba(4, 11, 16, 0.58) 52%, rgba(4, 11, 16, 0.86));
+  }
+
+  .content {
+    margin-top: 32px;
+  }
+
+  .kicker {
+    font-size: 9px;
+    line-height: 1.6;
+  }
+
+  .content h1 {
+    margin-bottom: 22px;
+    font-size: clamp(46px, 15vw, 70px);
+  }
+
+  .description {
+    max-width: 460px;
+    font-size: 13px;
+  }
+
+  .actions {
+    margin-top: 28px;
+    flex-direction: column;
+  }
+
+  .actions :global(.button) {
+    width: min(100%, 330px);
+  }
+
+  .racingHud {
+    bottom: 82px;
+    left: 18px;
+  }
+
+  .detection {
+    right: 20px;
+    bottom: 154px;
+    width: 90px;
+    height: 135px;
+  }
+
+  .scrollCue {
+    display: none;
+  }
+}

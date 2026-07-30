@@ -27,7 +27,7 @@ from .models import (
 )
 from .auth import authenticate, verify_token
 from .database import save_report, get_report, list_reports, init_db, save_report_images, get_report_images
-from .document_parser import load_all_requirements, build_requirements_context, parse_pdf
+from .document_parser import load_all_requirements, build_requirements_context, parse_pdf, load_output_templates, build_templates_context
 from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
@@ -143,15 +143,15 @@ def _extract_raw_from_error(err_str: str) -> tuple[str | None, str]:
     return raw_section, clean_error
 
 
-# ===== Evaluate endpoint =====
+# ===== Evaluation engine =====
 
-@app.post("/api/evaluate", response_model=EvaluateResponse)
-async def submit_evaluation(
+async def _run_evaluation(
     files: List[UploadFile] = File(...),
     rules: str = Form(default=""),
-    _auth: dict = Depends(require_auth),
+    *,
+    use_local_requirements: bool = True,
 ):
-    """Submit one or more images for fire safety evaluation.
+    """Run one or more images through the shared safety evaluation engine.
 
     All images are sent to the Qwen vision model together, so the AI can
     correlate findings across multiple photos of the same site.
@@ -190,8 +190,12 @@ async def submit_evaluation(
         rule_list = []
 
     # Load requirement documents and build context
-    docs = load_all_requirements()
+    docs = load_all_requirements() if use_local_requirements else []
     requirements_context = build_requirements_context(docs)
+
+    # Load output templates and build template context
+    templates = load_output_templates() if use_local_requirements else []
+    templates_context = build_templates_context(templates)
 
     # Call Qwen API for evaluation
     raw_content = None
@@ -200,6 +204,7 @@ async def submit_evaluation(
             images=images,
             rules=rule_list,
             requirements_context=requirements_context,
+            templates_context=templates_context,
         )
         eval_status = "success"
         error_msg = None
@@ -256,6 +261,8 @@ async def submit_evaluation(
             "rules": rule_list,
             "stats": result.get("stats", {"compliant": 0, "nonCompliant": 0, "suggestions": 0}),
             "findings": result.get("findings", []),
+            "inspection_record": result.get("inspection_record"),
+            "correction_notice": result.get("correction_notice"),
             "status": "success",
             "error_message": None,
             "raw_response": raw_content,
@@ -269,6 +276,8 @@ async def submit_evaluation(
             "rules": rule_list,
             "stats": {"compliant": 0, "nonCompliant": 0, "suggestions": 0},
             "findings": [],
+            "inspection_record": None,
+            "correction_notice": None,
             "status": "failed",
             "error_message": error_msg,
             "raw_response": raw_content,
@@ -287,30 +296,71 @@ async def submit_evaluation(
     )
 
 
+# ===== Evaluate endpoints =====
+
+@app.post("/api/evaluate", response_model=EvaluateResponse)
+async def submit_evaluation(
+    files: List[UploadFile] = File(...),
+    rules: str = Form(default=""),
+    _auth: dict = Depends(require_auth),
+):
+    """Submit an authenticated evaluation using the local requirement set."""
+    return await _run_evaluation(
+        files,
+        rules,
+        use_local_requirements=True,
+    )
+
+
+@app.post("/api/public/evaluate", response_model=EvaluateResponse)
+async def submit_public_evaluation(
+    files: List[UploadFile] = File(...),
+    rules: str = Form(default=""),
+):
+    """Submit an anonymous evaluation using neutral, general standards."""
+    return await _run_evaluation(
+        files,
+        rules,
+        use_local_requirements=False,
+    )
+
+
 # ===== Report endpoints =====
+
+def _build_report_payload(report_id: str, image_base_url: str) -> dict:
+    """Build a report response with image URLs for the requested API surface."""
+    report = get_report(report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="报告不存在")
+
+    payload = dict(report)
+    # Attach image URLs
+    images = get_report_images(report_id)
+    payload["images"] = [
+        {
+            "index": img["index"],
+            "filename": img["filename"],
+            "url": f"{image_base_url}/{report_id}/images/{img['index']}",
+        }
+        for img in images
+    ]
+
+    return payload
+
 
 @app.get("/api/reports/{report_id}")
 async def fetch_report(
     report_id: str,
     _auth: dict = Depends(require_auth),
 ):
-    """Fetch a single evaluation report by ID."""
-    report = get_report(report_id)
-    if report is None:
-        raise HTTPException(status_code=404, detail="报告不存在")
+    """Fetch a single authenticated evaluation report by ID."""
+    return _build_report_payload(report_id, "/api/reports")
 
-    # Attach image URLs
-    images = get_report_images(report_id)
-    report["images"] = [
-        {
-            "index": img["index"],
-            "filename": img["filename"],
-            "url": f"/api/reports/{report_id}/images/{img['index']}",
-        }
-        for img in images
-    ]
 
-    return report
+@app.get("/api/public/reports/{report_id}")
+async def fetch_public_report(report_id: str):
+    """Fetch one report when its opaque identifier is known."""
+    return _build_report_payload(report_id, "/api/public/reports")
 
 
 @app.get("/api/reports/{report_id}/images")
@@ -338,7 +388,21 @@ async def serve_report_image(
     image_index: int,
     _auth: dict = Depends(require_auth),
 ):
-    """Serve a stored evaluation image."""
+    """Serve a stored image for an authenticated report."""
+    return _serve_report_image(report_id, image_index)
+
+
+@app.get("/api/public/reports/{report_id}/images/{image_index}")
+async def serve_public_report_image(
+    report_id: str,
+    image_index: int,
+):
+    """Serve a stored image when its report identifier is known."""
+    return _serve_report_image(report_id, image_index)
+
+
+def _serve_report_image(report_id: str, image_index: int):
+    """Resolve and serve one persisted report image."""
     images = get_report_images(report_id)
     if image_index < 0 or image_index >= len(images):
         raise HTTPException(status_code=404, detail="图片不存在")
@@ -412,6 +476,19 @@ async def fetch_rules(
 ):
     """Fetch all evaluation rules, optionally filtered by category."""
     rules = list_rules(category=category if category else None)
+    return {"items": rules, "total": len(rules)}
+
+
+@app.get("/api/public/rules")
+async def fetch_public_rules():
+    """Return neutral built-in rules without exposing management data."""
+    blocked_terms = ("天心区", "公安分局", "派出所")
+    rules = [
+        rule
+        for rule in list_rules()
+        if not rule.get("is_custom", False)
+        and not any(term in str(rule) for term in blocked_terms)
+    ]
     return {"items": rules, "total": len(rules)}
 
 

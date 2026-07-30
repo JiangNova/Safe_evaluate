@@ -223,6 +223,18 @@ __marimo__/
 # Node
 node_modules/
 frontend/dist/
+frontend-public/node_modules/
+frontend-public/dist/
+website/node_modules/
+website/dist/
+!website/src/lib/
+!website/src/lib/**
+safe-evaluate.tar.gz
+update.tar.gz
+debug_ai_response.txt
+backend_stderr.log
+output/playwright/
+.playwright-cli/
 
 # App data
 backend/data/

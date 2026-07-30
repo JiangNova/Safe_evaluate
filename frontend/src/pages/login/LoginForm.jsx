@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { loginApi } from '../../services/api';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import styles from './LoginForm.module.css';
+import { getSafeRedirect } from '../../utils/safeRedirect';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -14,6 +15,8 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = getSafeRedirect(location.state?.from);
 
   function validate() {
     const errs = {};
@@ -37,7 +40,7 @@ export default function LoginForm() {
     try {
       const res = await loginApi(username, password);
       login({ username }, res.data.token);
-      navigate('/evaluate', { replace: true });
+      navigate(redirectTo, { replace: true });
     } catch (err) {
       const msg =
         err.response?.data?.message || '登录失败，请检查账号密码';

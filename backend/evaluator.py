@@ -75,6 +75,7 @@ def _build_messages(
     images: list[tuple[bytes, str]],
     rules: list[str],
     requirements_context: str,
+    templates_context: str = "",
 ) -> list[dict]:
     """Build the message payload for a vision-capable chat-completions API.
 
@@ -83,7 +84,7 @@ def _build_messages(
     """
     from .prompts import SYSTEM_PROMPT, build_user_prompt
 
-    user_text = build_user_prompt(rules, requirements_context)
+    user_text = build_user_prompt(rules, requirements_context, templates_context)
 
     content_blocks = []
     for img_bytes, mime_type in images:
@@ -429,6 +430,7 @@ async def evaluate_images(
     images: list[tuple[bytes, str]],
     rules: list[str],
     requirements_context: str,
+    templates_context: str = "",
     timeout: int = 120,
 ) -> tuple[dict, str | None]:
     """Send one or more images for fire safety evaluation.
@@ -440,6 +442,7 @@ async def evaluate_images(
         images: List of (file_bytes, mime_type) tuples.
         rules: List of selected rule IDs (empty = use all docs).
         requirements_context: Parsed requirement document text.
+        templates_context: Template document text for output formatting.
         timeout: API timeout in seconds.
 
     Returns:
@@ -447,7 +450,7 @@ async def evaluate_images(
         raw_ai_content is the unparsed text from the AI response, useful for
         debugging parse failures.
     """
-    messages = _build_messages(images, rules, requirements_context)
+    messages = _build_messages(images, rules, requirements_context, templates_context)
 
     payload = {
         "model": QWEN_MODEL,  # will be overridden per-endpoint below

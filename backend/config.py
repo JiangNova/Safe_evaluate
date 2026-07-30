@@ -31,14 +31,33 @@ API_RETRY_DELAY = float(os.getenv("API_RETRY_DELAY", "1.5"))  # seconds, multipl
 
 # App settings
 REQUIREMENT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "requirement")
+
+# Template files in requirement/ that are output templates, NOT regulation documents.
+# They should be excluded from the evaluation context and only used as output format templates.
+OUTPUT_TEMPLATE_FILES = {
+    "公安派出所日常消防监督检查记录表.docx",
+    "派出所责令立即改正通知书.docx",
+}
 REPORT_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "reports")
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 # Auth
-USERS_JSON = os.getenv("APP_USERS", '{"110Csust@": "110Csust@"}')
-USERS = _json.loads(USERS_JSON)
-JWT_SECRET = os.getenv("JWT_SECRET", "change-me-in-production-please")
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+USERS_JSON = os.getenv("APP_USERS", "{}")
+USERS = _json.loads(USERS_JSON) if USERS_JSON else {}
+JWT_SECRET = os.getenv("JWT_SECRET", "")
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
+
+if APP_ENV == "production":
+    _missing_settings = []
+    if not USERS:
+        _missing_settings.append("APP_USERS")
+    if not JWT_SECRET:
+        _missing_settings.append("JWT_SECRET")
+    if _missing_settings:
+        raise RuntimeError(
+            f"Missing required production settings: {', '.join(_missing_settings)}"
+        )
 
 # CORS
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")

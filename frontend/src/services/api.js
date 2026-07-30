@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { TIANXIN_LOGIN_URL } from '../config/routes';
 
 const api = axios.create({
   baseURL: '/api',
@@ -26,7 +27,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = TIANXIN_LOGIN_URL;
     }
     return Promise.reject(error);
   }
