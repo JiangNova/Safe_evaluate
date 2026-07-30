@@ -223,6 +223,8 @@ __marimo__/
 # Node
 node_modules/
 frontend/dist/
+frontend-public/node_modules/
+frontend-public/dist/
 website/node_modules/
 website/dist/
 !website/src/lib/

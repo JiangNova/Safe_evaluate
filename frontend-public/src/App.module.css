@@ -1,0 +1,281 @@
+.page {
+  width: min(1180px, calc(100% - 64px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 28px 0 22px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 760;
+  letter-spacing: 0.13em;
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+}
+
+.status {
+  padding: 8px 13px;
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.52fr);
+  column-gap: clamp(30px, 8vw, 110px);
+  padding: clamp(70px, 10vw, 132px) 0 clamp(74px, 9vw, 116px);
+}
+
+.eyebrow {
+  grid-column: 1 / -1;
+  margin: 0 0 28px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 720;
+  letter-spacing: 0.2em;
+}
+
+.hero h1 {
+  max-width: 720px;
+  margin: 0;
+  color: var(--ink);
+  font-family: Georgia, 'Noto Serif SC', 'Songti SC', serif;
+  font-size: clamp(3.1rem, 7.2vw, 6.7rem);
+  font-weight: 400;
+  letter-spacing: -0.06em;
+  line-height: 0.96;
+}
+
+.description {
+  align-self: end;
+  margin: 0 0 5px;
+  padding-left: 24px;
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+  font-size: clamp(0.96rem, 1.4vw, 1.08rem);
+  line-height: 1.85;
+}
+
+.workflow {
+  border-top: 1px solid var(--line);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 0;
+  color: var(--subtle);
+  font-size: 0.72rem;
+  letter-spacing: 0.11em;
+}
+
+.sectionHeading p {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 720;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.card {
+  min-height: 260px;
+  padding: 26px 24px 30px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.card:hover {
+  background: var(--surface);
+  transform: translateY(-3px);
+}
+
+.cardTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 86px;
+  color: var(--subtle);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.72rem;
+}
+
+.cardDot {
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+}
+
+.card h2 {
+  margin: 0 0 13px;
+  color: var(--ink);
+  font-family: Georgia, 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.75;
+}
+
+.actionPanel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin: 42px 0 78px;
+  padding: 26px 28px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.actionLabel {
+  margin: 0 0 8px;
+  color: var(--accent-light);
+  font-size: 0.68rem;
+  font-weight: 720;
+  letter-spacing: 0.18em;
+}
+
+.actionNote {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.actionPanel button {
+  min-width: 152px;
+  padding: 13px 22px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 2px;
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 45%);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: not-allowed;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--subtle);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 920px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .description {
+    max-width: 620px;
+    margin-top: 36px;
+  }
+
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 759px) {
+  .page {
+    width: min(100% - 36px, 560px);
+    padding-top: 18px;
+  }
+
+  .header {
+    padding-bottom: 18px;
+  }
+
+  .status {
+    padding: 7px 10px;
+    font-size: 0.67rem;
+  }
+
+  .hero {
+    padding: 58px 0 68px;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.9rem, 16vw, 4.5rem);
+  }
+
+  .description {
+    padding-left: 17px;
+  }
+
+  .sectionHeading span {
+    display: none;
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    min-height: 210px;
+  }
+
+  .cardTopline {
+    margin-bottom: 54px;
+  }
+
+  .actionPanel {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 54px;
+  }
+
+  .actionPanel button {
+    width: 100%;
+  }
+
+  .footer {
+    gap: 12px;
+    flex-direction: column;
+  }
+}

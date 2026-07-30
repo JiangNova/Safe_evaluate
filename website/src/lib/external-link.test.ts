@@ -3,7 +3,7 @@ import { getPlatformUrl } from './external-link'
 
 describe('getPlatformUrl', () => {
   it('uses the standalone platform dev server during development', () => {
-    expect(getPlatformUrl(true)).toBe('http://127.0.0.1:3000/evaluate')
+    expect(getPlatformUrl(true)).toBe('http://127.0.0.1:3001/evaluate/')
   })
 
   it('uses the same-origin route in production', () => {
@@ -11,6 +11,6 @@ describe('getPlatformUrl', () => {
   })
 
   it('never exposes the platform dev port in production', () => {
-    expect(getPlatformUrl(false)).not.toContain(':3000')
+    expect(getPlatformUrl(false)).not.toContain(':3001')
   })
 })
