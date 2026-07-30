@@ -12,6 +12,18 @@ describe('getSafeRedirect', () => {
     expect(getSafeRedirect('/history#recent')).toBe('/history#recent');
   });
 
+  it('normalizes a fully prefixed Tianxin route', () => {
+    expect(
+      getSafeRedirect('/evaluate_tianxin/report/abc?tab=detail'),
+    ).toBe('/report/abc?tab=detail');
+  });
+
+  it('rejects a lookalike Tianxin prefix', () => {
+    expect(getSafeRedirect('/evaluate_tianxin-evil/report/abc')).toBe(
+      '/evaluate',
+    );
+  });
+
   it('rejects protocol-relative redirects', () => {
     expect(getSafeRedirect('//evil.example')).toBe('/evaluate');
   });
