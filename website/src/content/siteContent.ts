@@ -132,11 +132,11 @@ export const aiProjects = [
   {
     index: '01',
     status: '可在线体验',
-    eyebrow: 'Fire Safety Intelligence',
-    title: '消防安全风险评估',
+    eyebrow: 'AUTOMATED COMPLIANCE EVALUATION',
+    title: '自动合规评判平台',
     description:
-      '上传消防现场照片或图纸，结合检查依据识别风险，并生成结构化评估结果与检查文书。',
-    points: ['多图与图纸分析', '消防风险识别', '法规依据关联', '评估报告与检查文书生成'],
+      '面向图片材料、法律法规与规章制度，构建可扩展的智能合规评判框架。',
+    points: ['多类型材料解析', '法律法规关联', '规章制度对照', '结构化评判结果'],
     platform: true,
   },
 ] as const
