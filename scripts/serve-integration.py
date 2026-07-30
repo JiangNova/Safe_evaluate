@@ -73,6 +73,10 @@ class IntegrationHandler(BaseHTTPRequestHandler):
             self._proxy_api(send_body)
             return
 
+        if path in {"/website-static", "/website-static/"}:
+            self._redirect("/")
+            return
+
         if path.startswith("/website-static/"):
             relative = path.removeprefix("/website-static/")
             self._serve_file(WEBSITE_DIST / relative, WEBSITE_DIST, send_body)

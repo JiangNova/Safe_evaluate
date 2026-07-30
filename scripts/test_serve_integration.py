@@ -188,6 +188,22 @@ class IntegrationHandlerTests(unittest.TestCase):
         self.assertEqual(status, 302)
         self.assertEqual(headers["Location"], "/evaluate_tianxin/")
 
+    def test_bare_website_static_paths_redirect_home(self):
+        for path in ("/website-static", "/website-static/"):
+            with self.subTest(path=path):
+                status, headers, _ = self.request(path)
+                self.assertEqual(status, 302)
+                self.assertEqual(headers["Location"], "/")
+
+    def test_website_static_assets_are_not_rewritten_to_home(self):
+        status, _, body = self.request("/website-static/assets/app.js")
+        self.assertEqual(status, 200)
+        self.assertEqual(body, "website-asset")
+        self.assertEqual(
+            self.request("/website-static/assets/missing.js")[0],
+            404,
+        )
+
     def test_api_prefix_is_still_proxied(self):
         status, headers, _ = self.request("/api/health")
         self.assertEqual(status, 204)
