@@ -31,6 +31,13 @@ API_RETRY_DELAY = float(os.getenv("API_RETRY_DELAY", "1.5"))  # seconds, multipl
 
 # App settings
 REQUIREMENT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "requirement")
+
+# Template files in requirement/ that are output templates, NOT regulation documents.
+# They should be excluded from the evaluation context and only used as output format templates.
+OUTPUT_TEMPLATE_FILES = {
+    "公安派出所日常消防监督检查记录表.docx",
+    "派出所责令立即改正通知书.docx",
+}
 REPORT_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "reports")
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 

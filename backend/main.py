@@ -27,7 +27,7 @@ from .models import (
 )
 from .auth import authenticate, verify_token
 from .database import save_report, get_report, list_reports, init_db, save_report_images, get_report_images
-from .document_parser import load_all_requirements, build_requirements_context, parse_pdf
+from .document_parser import load_all_requirements, build_requirements_context, parse_pdf, load_output_templates, build_templates_context
 from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
@@ -193,6 +193,10 @@ async def submit_evaluation(
     docs = load_all_requirements()
     requirements_context = build_requirements_context(docs)
 
+    # Load output templates and build template context
+    templates = load_output_templates()
+    templates_context = build_templates_context(templates)
+
     # Call Qwen API for evaluation
     raw_content = None
     try:
@@ -200,6 +204,7 @@ async def submit_evaluation(
             images=images,
             rules=rule_list,
             requirements_context=requirements_context,
+            templates_context=templates_context,
         )
         eval_status = "success"
         error_msg = None
@@ -256,6 +261,8 @@ async def submit_evaluation(
             "rules": rule_list,
             "stats": result.get("stats", {"compliant": 0, "nonCompliant": 0, "suggestions": 0}),
             "findings": result.get("findings", []),
+            "inspection_record": result.get("inspection_record"),
+            "correction_notice": result.get("correction_notice"),
             "status": "success",
             "error_message": None,
             "raw_response": raw_content,
@@ -269,6 +276,8 @@ async def submit_evaluation(
             "rules": rule_list,
             "stats": {"compliant": 0, "nonCompliant": 0, "suggestions": 0},
             "findings": [],
+            "inspection_record": None,
+            "correction_notice": None,
             "status": "failed",
             "error_message": error_msg,
             "raw_response": raw_content,

@@ -11,7 +11,7 @@ except ImportError:
     _HAS_DOCX = False
     Document = None  # type: ignore
 
-from .config import REQUIREMENT_DIR
+from .config import REQUIREMENT_DIR, OUTPUT_TEMPLATE_FILES
 
 
 def _read_docx(filepath: str) -> str:
@@ -334,6 +334,10 @@ def load_all_requirements() -> list[dict]:
         return documents
 
     for filename in sorted(os.listdir(REQUIREMENT_DIR)):
+        # Skip output template files — they are not regulation documents
+        if filename in OUTPUT_TEMPLATE_FILES:
+            continue
+
         filepath = os.path.join(REQUIREMENT_DIR, filename)
         if not os.path.isfile(filepath):
             continue
@@ -470,3 +474,59 @@ def build_requirements_context(documents: list[dict], max_chars: int = 8000) -> 
         total += len(excerpt)
 
     return "\n\n".join(parts)
+
+
+def load_output_templates() -> list[dict]:
+    """Load output template files (not regulation docs) from requirement/ folder.
+
+    Returns list of {filename, content} for each template file.
+    """
+    templates = []
+    if not os.path.exists(REQUIREMENT_DIR):
+        return templates
+
+    for filename in sorted(os.listdir(REQUIREMENT_DIR)):
+        if filename not in OUTPUT_TEMPLATE_FILES:
+            continue
+
+        filepath = os.path.join(REQUIREMENT_DIR, filename)
+        if not os.path.isfile(filepath):
+            continue
+
+        ext = os.path.splitext(filename)[1].lower()
+        try:
+            if ext == ".docx":
+                content = _read_docx(filepath)
+            elif ext == ".doc":
+                content = _read_doc(filepath)
+            else:
+                continue
+        except Exception as e:
+            content = f"[读取失败: {e}]"
+
+        if content and len(content.strip()) > 50:
+            templates.append({
+                "filename": filename,
+                "filepath": filepath,
+                "content": content,
+                "length": len(content),
+            })
+
+    return templates
+
+
+def build_templates_context(templates: list[dict]) -> str:
+    """Build a text block describing the two output templates for the LLM prompt.
+
+    This tells the LLM what fields are in each template so it can fill them out.
+    """
+    if not templates:
+        return ""
+
+    parts = ["## 输出模板参考（你必须按此格式生成最终报告）\n"]
+    for tmpl in templates:
+        parts.append(f"### 模板: {tmpl['filename']}\n")
+        parts.append(tmpl["content"])
+        parts.append("")
+
+    return "\n".join(parts)
