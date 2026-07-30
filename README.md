@@ -44,73 +44,68 @@ pip install fastapi uvicorn[standard] python-multipart python-docx httpx pydanti
 pip install fastapi uvicorn[standard] python-multipart python-docx httpx pydantic PyJWT -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
 ```
 
-### 2. 启动后端（端口 8000）
+### 2. 启动完整本地环境（推荐）
 
-```bash
-# 方式一：使用启动脚本
-start_backend.bat
+在项目根目录执行：
 
-# 方式二：手动启动
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
-API 文档自动生成：
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+脚本会构建并测试三个前端、复用或启动后端、选择可用的本地预览端口，
+然后自动打开官网。终端会打印最终入口：
 
-### 3. 启动天心区定制评判平台（端口 3000）
+- `/`：AGULAB 官网
+- `/evaluate/`：通用评判平台
+- `/evaluate_tianxin/`：天心区消防安全评估系统
+- `/api/health`：后端健康检查
 
-```bash
-cd frontend
-npm install
+默认从 8080 端口开始选择。端口被占用时，脚本不会结束占用进程，而会自动
+选择后续可用端口。再次启动且构建产物已是最新时，可使用 `-SkipBuild`；
+不希望自动打开浏览器时，可使用 `-NoBrowser`。按 `Ctrl+C` 停止本次启动的
+本地服务。
+
+生产环境与本地完整预览使用相同的路径结构：
+
+| 路径 | 服务 |
+|------|------|
+| `/` | AGULAB 官网 |
+| `/evaluate/` | 通用自动合规评判平台框架 |
+| `/evaluate_tianxin/` | 天心区定制评判平台 |
+| `/api/*` | SafeEvaluate 后端接口 |
+
+### 3. 高级：单应用开发
+
+仅在独立开发某个应用时分别运行服务：
+
+```powershell
+# 后端：端口 8000
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+
+# 天心区定制平台：进入 frontend 后运行
+npm run dev
+
+# 通用平台：进入 frontend-public 后运行
+npm run dev
+
+# AGULAB 官网：进入 website 后运行
 npm run dev
 ```
 
-访问：`http://127.0.0.1:3000/evaluate_tianxin/`
+单独的 Vite 开发或 Preview 服务只适用于组件开发，不实现生产环境的同域
+路径分流，不能用于验证官网到 `/evaluate/` 或 `/evaluate_tianxin/` 的完整
+跳转。跨应用联调始终使用 `scripts/start-local.ps1`。
 
-### 4. 启动通用评判平台框架（端口 3001）
+API 文档：
 
-```bash
-cd frontend-public
-npm install
-npm run dev
-```
-
-访问：`http://127.0.0.1:3001/evaluate/`
+- Swagger UI：`http://127.0.0.1:8000/docs`
+- ReDoc：`http://127.0.0.1:8000/redoc`
 
 `frontend-public` 在当前阶段仅提供中性的产品页面框架，不会提交图片、
 调用 AI 或生成评判结果。现有需要登录、包含完整业务功能的定制平台仍位于
 `frontend`。
 
-### 5. 启动 AGULAB 官网（端口 5173）
-
-```bash
-cd website
-npm install
-npm run dev
-```
-
-开发地址：`http://127.0.0.1:5173/website-static/`
-
-生产环境入口如下：
-
-| 路径 | 服务 |
-|------|------|
-| `/` | AGULAB 官网 |
-| `/evaluate` | 通用自动合规评判平台框架 |
-| `/evaluate_tianxin` | 天心区定制评判平台 |
-| `/api/*` | SafeEvaluate 后端接口 |
-
-完成三个前端构建后，可在不安装 Docker 的电脑上预览同域路由：
-
-```bash
-python scripts/serve-integration.py --port 8080
-```
-
-访问 `http://127.0.0.1:8080/`。该脚本仅监听本机，并将 `/api/*`
-转发到本地 8000 端口。
-
-### 6. 登录
+### 4. 登录
 
 账号、密码和 JWT 密钥必须在本地或服务器 `.env` 中配置。项目不再提供
 可直接用于生产环境的默认登录凭据。

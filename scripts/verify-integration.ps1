@@ -2,6 +2,33 @@ param([string]$BaseUrl = 'http://127.0.0.1')
 
 $ErrorActionPreference = 'Stop'
 
+$redirectChecks = @(
+  @{ Path = '/website-static'; Location = '/' },
+  @{ Path = '/website-static/'; Location = '/' },
+  @{ Path = '/evaluate'; Location = '/evaluate/' },
+  @{ Path = '/evaluate_tianxin'; Location = '/evaluate_tianxin/' }
+)
+
+foreach ($check in $redirectChecks) {
+  $request = [System.Net.HttpWebRequest]::Create(
+    "$BaseUrl$($check.Path)"
+  )
+  $request.AllowAutoRedirect = $false
+  $response = $null
+  try {
+    $response = $request.GetResponse()
+    $statusCode = [int]$response.StatusCode
+    $location = $response.Headers['Location']
+  } finally {
+    if ($null -ne $response) {
+      $response.Close()
+    }
+  }
+  if ($statusCode -ne 302 -or $location -ne $check.Location) {
+    throw "Redirect check failed: $($check.Path)"
+  }
+}
+
 $checks = @(
   @{ Path = '/'; Contains = '<title>AGULAB' },
   @{ Path = '/about'; Contains = '<title>AGULAB' },

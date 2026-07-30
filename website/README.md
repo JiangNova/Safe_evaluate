@@ -11,6 +11,15 @@ npm run dev
 
 开发服务器默认运行在 `http://localhost:5173`。
 
+该命令仅用于独立开发官网组件。完整联调请从项目根目录运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
+```
+
+请勿使用 `npm run preview` 验证官网到 `/evaluate/` 的跨应用链接；Vite
+Preview 不实现生产环境的同域路径分流。
+
 ## 验证
 
 ```bash
