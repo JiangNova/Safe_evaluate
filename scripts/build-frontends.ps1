@@ -19,6 +19,15 @@ try {
   Pop-Location
 }
 
+Push-Location (Join-Path $projectRoot 'frontend-public')
+try {
+  Invoke-Npm -Arguments @('ci')
+  Invoke-Npm -Arguments @('test', '--', '--run')
+  Invoke-Npm -Arguments @('run', 'build')
+} finally {
+  Pop-Location
+}
+
 Push-Location (Join-Path $projectRoot 'frontend')
 try {
   Invoke-Npm -Arguments @('ci')
@@ -28,4 +37,4 @@ try {
   Pop-Location
 }
 
-Write-Host 'Both frontends built successfully.'
+Write-Host 'Website, public platform, and Tianxin platform built successfully.'

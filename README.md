@@ -21,7 +21,9 @@ Safe_evaluate/
 │   ├── document_parser.py       # 解析 requirement/ 下的法规文档
 │   ├── prompts.py               # 评估提示词模板
 │   └── data/reports/            # 报告存储目录
-├── frontend/                    # React + Vite 前端
+├── website/                     # React + Vite AGULAB 官网
+├── frontend-public/             # 通用自动合规评判平台框架
+├── frontend/                    # 已有的天心区定制评判平台
 │   └── src/...
 ├── setup_backend.bat            # 后端一键安装脚本
 ├── start_backend.bat            # 后端启动脚本
@@ -56,7 +58,7 @@ API 文档自动生成：
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-### 3. 启动风险评估平台（端口 3000）
+### 3. 启动天心区定制评判平台（端口 3000）
 
 ```bash
 cd frontend
@@ -64,9 +66,23 @@ npm install
 npm run dev
 ```
 
-访问: http://127.0.0.1:3000/evaluate
+访问：`http://127.0.0.1:3000/evaluate_tianxin/`
 
-### 4. 启动 AGULAB 官网（端口 5173）
+### 4. 启动通用评判平台框架（端口 3001）
+
+```bash
+cd frontend-public
+npm install
+npm run dev
+```
+
+访问：`http://127.0.0.1:3001/evaluate/`
+
+`frontend-public` 在当前阶段仅提供中性的产品页面框架，不会提交图片、
+调用 AI 或生成评判结果。现有需要登录、包含完整业务功能的定制平台仍位于
+`frontend`。
+
+### 5. 启动 AGULAB 官网（端口 5173）
 
 ```bash
 cd website
@@ -76,10 +92,16 @@ npm run dev
 
 开发地址：`http://127.0.0.1:5173/website-static/`
 
-生产环境中，Nginx 会将官网放在 `/`，风险评估平台放在
-`/evaluate`，后端接口保留为 `/api/*`。
+生产环境入口如下：
 
-完成两个前端构建后，可在不安装 Docker 的电脑上预览同域路由：
+| 路径 | 服务 |
+|------|------|
+| `/` | AGULAB 官网 |
+| `/evaluate` | 通用自动合规评判平台框架 |
+| `/evaluate_tianxin` | 天心区定制评判平台 |
+| `/api/*` | SafeEvaluate 后端接口 |
+
+完成三个前端构建后，可在不安装 Docker 的电脑上预览同域路由：
 
 ```bash
 python scripts/serve-integration.py --port 8080
@@ -88,7 +110,7 @@ python scripts/serve-integration.py --port 8080
 访问 `http://127.0.0.1:8080/`。该脚本仅监听本机，并将 `/api/*`
 转发到本地 8000 端口。
 
-### 5. 登录
+### 6. 登录
 
 账号、密码和 JWT 密钥必须在本地或服务器 `.env` 中配置。项目不再提供
 可直接用于生产环境的默认登录凭据。
@@ -124,7 +146,8 @@ python scripts/serve-integration.py --port 8080
 ## 技术栈
 
 - **官网**: React 19 + TypeScript + Vite
-- **风险评估平台**: React 18 + Vite + React Router 7 + CSS Modules
+- **通用评判平台框架**: React 18 + Vite + CSS Modules
+- **天心区定制评判平台**: React 18 + Vite + React Router 7 + CSS Modules
 - **后端**: Python FastAPI + Pydantic + python-docx
 - **AI**: 阿里云千问 Qwen3.7-vl-plus（视觉大模型）
 - **存储**: JSON 文件存储
