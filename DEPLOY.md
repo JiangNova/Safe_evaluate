@@ -142,7 +142,7 @@ EOF
 ## 第七步：构建三个前端并上传
 
 在**本地电脑**的项目根目录运行统一脚本。脚本会依次检查并构建官网、
-通用评判平台框架和天心区定制评判平台：
+公开自动安全评估平台和内部定制评判平台：
 
 ```powershell
 cd d:\myself\Safe_evaluate
@@ -179,7 +179,7 @@ docker-compose logs -f backend
 curl http://localhost:8000/api/health
 
 # 官网：浏览器打开 http://你的公网IP/
-# 通用评判平台框架：http://你的公网IP/evaluate
+# 公开自动安全评估平台：http://你的公网IP/evaluate
 # 天心区定制评判平台：http://你的公网IP/evaluate_tianxin
 ```
 
@@ -273,7 +273,7 @@ docker-compose down && docker-compose up -d --build
 生产访问路径：
 
 - AGULAB 官网：`/`
-- 通用自动合规评判平台框架：`/evaluate`
+- 公开自动安全评估平台：`/evaluate`
 - 天心区定制评判平台：`/evaluate_tianxin`
 - SafeEvaluate 后端接口：`/api/*`
 

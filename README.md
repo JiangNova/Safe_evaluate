@@ -22,7 +22,7 @@ Safe_evaluate/
 │   ├── prompts.py               # 评估提示词模板
 │   └── data/reports/            # 报告存储目录
 ├── website/                     # React + Vite AGULAB 官网
-├── frontend-public/             # 通用自动合规评判平台框架
+├── frontend-public/             # 备案公开版自动安全评估平台
 ├── frontend/                    # 已有的天心区定制评判平台
 │   └── src/...
 ├── setup_backend.bat            # 后端一键安装脚本
@@ -56,7 +56,7 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 然后自动打开官网。终端会打印最终入口：
 
 - `/`：AGULAB 官网
-- `/evaluate/`：通用评判平台
+- `/evaluate/`：公开自动安全评估平台
 - `/evaluate_tianxin/`：天心区消防安全评估系统
 - `/api/health`：后端健康检查
 
@@ -70,7 +70,7 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 | 路径 | 服务 |
 |------|------|
 | `/` | AGULAB 官网 |
-| `/evaluate/` | 通用自动合规评判平台框架 |
+| `/evaluate/` | 公开自动安全评估平台 |
 | `/evaluate_tianxin/` | 天心区定制评判平台 |
 | `/api/*` | SafeEvaluate 后端接口 |
 
@@ -85,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 # 天心区定制平台：进入 frontend 后运行
 npm run dev
 
-# 通用平台：进入 frontend-public 后运行
+# 公开评估平台：进入 frontend-public 后运行
 npm run dev
 
 # AGULAB 官网：进入 website 后运行
@@ -101,16 +101,26 @@ API 文档：
 - Swagger UI：`http://127.0.0.1:8000/docs`
 - ReDoc：`http://127.0.0.1:8000/redoc`
 
-`frontend-public` 在当前阶段仅提供中性的产品页面框架，不会提交图片、
-调用 AI 或生成评判结果。现有需要登录、包含完整业务功能的定制平台仍位于
-`frontend`。
+`frontend-public` 提供无需登录的一次性评估流程，可上传材料、选择公开规则、
+调用 AI 并查看本次报告；它不提供历史报告列表、统计或规则管理。需要登录的
+内部定制平台仍位于 `frontend`。
 
 ### 4. 登录
 
 账号、密码和 JWT 密钥必须在本地或服务器 `.env` 中配置。项目不再提供
 可直接用于生产环境的默认登录凭据。
 
-## 使用流程
+## 公开版使用流程
+
+1. **新建评估** → 上传现场照片、图纸或 PDF
+2. **选择评估规则** → 可选公开的通用安全标准
+3. **开始评估** → 系统调用视觉大模型进行分析
+4. **查看本次报告** → 查看符合项、风险项和整改建议
+
+公开版不会提供历史报告列表。以下登录和管理功能仅用于
+`/evaluate_tianxin/` 内部定制平台。
+
+## 内部版使用流程
 
 1. **登录** → 进入系统
 2. **新建评估** → 上传消防现场照片/图纸（支持 JPG/PNG/GIF/BMP/WebP/PDF）
@@ -141,7 +151,7 @@ API 文档：
 ## 技术栈
 
 - **官网**: React 19 + TypeScript + Vite
-- **通用评判平台框架**: React 18 + Vite + CSS Modules
+- **公开自动安全评估平台**: React 18 + React Router 7 + Vite + CSS Modules
 - **天心区定制评判平台**: React 18 + Vite + React Router 7 + CSS Modules
 - **后端**: Python FastAPI + Pydantic + python-docx
 - **AI**: 阿里云千问 Qwen3.7-vl-plus（视觉大模型）

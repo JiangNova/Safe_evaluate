@@ -54,6 +54,16 @@ class PublicApiContractTests(unittest.TestCase):
         self.assertIn(client.get("/api/reports").status_code, (401, 403))
         self.assertIn(client.get("/api/stats").status_code, (401, 403))
 
+    def test_public_evaluation_rejects_unsupported_files_before_ai_call(self):
+        response = client.post(
+            "/api/public/evaluate",
+            files={"files": ("notes.txt", b"not an image", "text/plain")},
+            data={"rules": "[]"},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("不支持的文件类型", response.json()["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()
