@@ -3,10 +3,22 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
+# 安装系统依赖。兼容新版 deb822 与传统 sources.list 格式，
+# 避免国内服务器访问 Debian 官方源时长时间阻塞。
+RUN set -eux; \
+    for sources_file in \
+        /etc/apt/sources.list \
+        /etc/apt/sources.list.d/debian.sources; do \
+        if [ -f "${sources_file}" ]; then \
+            sed -i \
+                -e 's|deb.debian.org|mirrors.aliyun.com|g' \
+                -e 's|security.debian.org|mirrors.aliyun.com|g' \
+                "${sources_file}"; \
+        fi; \
+    done; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends gcc; \
+    rm -rf /var/lib/apt/lists/*
 
 # 安装Python依赖
 COPY backend/requirements.txt .
