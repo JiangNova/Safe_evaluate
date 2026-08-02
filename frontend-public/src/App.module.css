@@ -708,6 +708,22 @@
 .selectedResources li > button { color: var(--color-danger); font-size: 12px; }
 .saveInline { display: flex; gap: 5px; color: var(--text-secondary); font-size: 12px; }
 
+.statusPanel {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-md);
+  background: var(--color-success-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.statusPanel strong { color: var(--text-primary); font-size: 13px; }
+.statusPanel p, .statusPanel small { margin: 0; }
+.blockingPanel { border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning); }
+
 @media (max-width: 640px) {
   .jobModeCards, .scenarioGrid { grid-template-columns: 1fr; }
   .selectedResources li { align-items: flex-start; flex-wrap: wrap; }

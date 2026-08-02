@@ -187,6 +187,13 @@ export function finalizeDocument(jobId, documentId) {
   });
 }
 
+export function renderDocumentDraft(jobId, documentId) {
+  return api.post(`/jobs/${jobId}/documents/${documentId}/render-draft`, null, {
+    headers: jobHeaders(jobId),
+    timeout: 300000,
+  });
+}
+
 export function downloadArtifact(jobId, fileId) {
   return api.get(`/jobs/${jobId}/artifacts/${fileId}`, {
     headers: jobHeaders(jobId),

@@ -2,12 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import DocumentFieldEditor from '../components/DocumentFieldEditor';
 import StepIndicator from '../components/StepIndicator';
+import ApplicabilityPanel from '../components/ApplicabilityPanel';
+import QualityGatePanel from '../components/QualityGatePanel';
 import {
   downloadArtifact,
   downloadArtifactArchive,
   finalizeDocument,
   getPublicJob,
   regenerateDocumentField,
+  renderDocumentDraft,
   updateDocumentFields,
 } from '../services/api';
 import styles from '../App.module.css';
@@ -128,6 +131,22 @@ export default function JobWorkspacePage() {
     }
   }
 
+  async function renderDraft() {
+    try {
+      if (dirtyDocumentId === activeDocumentId) {
+        await updateDocumentFields(jobId, activeDocumentId, drafts[activeDocumentId]);
+        setDirtyDocumentId(null);
+      }
+      const response = await renderDocumentDraft(jobId, activeDocumentId);
+      const fileId = response.data.file.id;
+      const fileResponse = await downloadArtifact(jobId, fileId);
+      saveBlob(fileResponse.data, response.data.file.name || '文书草稿.docx');
+      await loadJob();
+    } catch (requestError) {
+      setError(requestError.response?.data?.detail?.message || requestError.message);
+    }
+  }
+
   async function download(fileId, filename) {
     const response = await downloadArtifact(jobId, fileId);
     saveBlob(response.data, filename);
@@ -212,6 +231,8 @@ export default function JobWorkspacePage() {
                 ))}
               </aside>
               <main className={styles.documentEditorPane}>
+                <ApplicabilityPanel applicability={activeDocument.applicability} />
+                <QualityGatePanel quality={activeDocument.quality} values={drafts[activeDocumentId] || {}} definitions={activeTemplate.fields} />
                 <div className={styles.autosaveState}>{saving ? '正在自动保存…' : '修改将自动保存'}</div>
                 <DocumentFieldEditor
                   definitions={activeTemplate.fields}
@@ -223,6 +244,9 @@ export default function JobWorkspacePage() {
                   regeneratingKey={regeneratingKey}
                 />
                 <div className={styles.finalizeActions}>
+                  <button type="button" className={styles.secondaryButton} onClick={renderDraft}>
+                    生成草稿
+                  </button>
                   <button type="button" className={styles.primaryButton} onClick={finalize}>
                     确认定稿
                   </button>
@@ -248,4 +272,3 @@ export default function JobWorkspacePage() {
     </div>
   );
 }
-

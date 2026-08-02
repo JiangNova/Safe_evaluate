@@ -129,4 +129,11 @@ describe('public evaluation application', () => {
     expect(source).toContain('自定义新评估');
     expect(source).toContain('ResourcePicker');
   });
+
+  it('shows placement, applicability, and blocking quality states', () => {
+    const runtime = readRuntimeSources();
+    for (const text of ['填写位置', '文书适用性', '待人工补充', '暂不能生成', '阻止定稿']) {
+      expect(runtime).toContain(text);
+    }
+  });
 });

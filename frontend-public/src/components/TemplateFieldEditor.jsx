@@ -1,4 +1,5 @@
 import styles from '../App.module.css';
+import PlacementEditor from './PlacementEditor';
 
 const FIELD_TYPES = [
   ['text', '单行文本'],
@@ -128,6 +129,7 @@ export default function TemplateFieldEditor({ fields, sourceFormat, onChange }) 
               ))}
             </div>
           )}
+          <PlacementEditor locator={field.locator} sourceFormat={sourceFormat} />
         </article>
       ))}
 
@@ -141,4 +143,3 @@ export default function TemplateFieldEditor({ fields, sourceFormat, onChange }) 
     </div>
   );
 }
-
