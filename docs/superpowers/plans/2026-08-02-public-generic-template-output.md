@@ -6,7 +6,7 @@
 
 **Architecture:** Add an isolated anonymous-job domain beside the legacy report domain. Parse all inputs into source-addressable text, evaluate once into a canonical generic result, map that result into confirmed template fields, and use deterministic DOCX/PDF renderers for artifacts. The public React app becomes a six-step job wizard and document review workspace; the Tianxin app and legacy endpoints remain unchanged.
 
-**Tech Stack:** FastAPI 0.115, SQLite, Pydantic 2, python-docx 1.1.2, PyMuPDF, Pillow, pytesseract/Tesseract, LibreOffice Headless, React 18, React Router 7, Axios, Vitest, Python unittest.
+**Tech Stack:** FastAPI 0.115, SQLite, Pydantic 2, python-docx 1.1.2, pypdf, pypdfium2, ReportLab, Pillow, pytesseract/Tesseract, LibreOffice Headless, React 18, React Router 7, Axios, Vitest, Python unittest.
 
 > **Execution note (2026-08-02):** The local pip proxy cannot install pytest. With user approval, all Python test examples in this plan are implemented with the repository's existing standard-library `unittest` style. Test behavior and coverage remain the same; no backend test-only dependency file is required.
 
@@ -175,7 +175,7 @@ class ParsedSource:
     warnings: list[str]
 ```
 
-Pin `PyMuPDF`, `Pillow`, and `pytesseract` in requirements. Enforce 50 MB per file, total-job limits, ZIP entry limits for DOCX, encrypted-PDF rejection, UTF-8/GB18030 TXT decoding, and generated storage names.
+Pin `pypdf`, `pypdfium2`, `Pillow`, and `pytesseract` in requirements. Enforce 50 MB per file, total-job limits, ZIP entry limits for DOCX, encrypted-PDF rejection, UTF-8/GB18030 TXT decoding, and generated storage names. Use liberal-licensed PDFium bindings instead of AGPL-licensed PDF engines.
 
 - [ ] **Step 4: Run tests and verify pass**
 
@@ -324,7 +324,7 @@ def test_render_docx_replaces_body_table_header_and_footer(docx_template, tmp_pa
 
 def test_render_pdf_preserves_page_count_and_reports_overflow(pdf_template, tmp_path):
     result = render_pdf(pdf_template, fields, long_values, tmp_path / "out.pdf")
-    assert fitz.open(result.path).page_count == fitz.open(pdf_template).page_count
+    assert len(PdfReader(result.path).pages) == len(PdfReader(pdf_template).pages)
     assert any(w.code == "field_overflow" for w in result.warnings)
 
 def test_zip_contains_manifest_for_failed_documents(tmp_path):
@@ -339,7 +339,7 @@ Expected: FAIL because renderer is missing.
 
 - [ ] **Step 3: Implement run-aware DOCX replacement, PDF overlay, overflow warnings, conversion, and ZIP**
 
-Use `python-docx` for Word replacement and PyMuPDF for PDF overlays. Run LibreOffice with `--headless --convert-to pdf --outdir`, an explicit timeout, and a temporary profile directory. Add `reportlab` only if PyMuPDF cannot embed the required CJK font. Update Docker to install `libreoffice-writer`, `fonts-noto-cjk`, `tesseract-ocr`, and `tesseract-ocr-chi-sim` without recommended packages.
+Use `python-docx` for Word replacement, ReportLab for the coordinate overlay, and pypdf for merging the overlay with the original PDF. Use pypdfium2 for page previews/OCR rendering. Run LibreOffice with `--headless --convert-to pdf --outdir`, an explicit timeout, and a temporary profile directory. Update Docker to install `libreoffice-writer`, `fonts-noto-cjk`, `tesseract-ocr`, and `tesseract-ocr-chi-sim` without recommended packages.
 
 - [ ] **Step 4: Run tests and verify pass**
 

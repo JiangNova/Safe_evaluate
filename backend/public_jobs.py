@@ -291,6 +291,19 @@ def add_file(job_id: str, kind: str, metadata: dict) -> dict:
     return _fetch_related("public_job_files", record_id)
 
 
+def get_file_usage(job_id: str) -> tuple[int, int]:
+    """Return the number of stored files and their total bytes for a job."""
+    with _get_db() as conn:
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS file_count, COALESCE(SUM(size), 0) AS total_size
+            FROM public_job_files WHERE job_id = ?
+            """,
+            (job_id,),
+        ).fetchone()
+    return int(row["file_count"]), int(row["total_size"])
+
+
 def add_template(
     job_id: str,
     source_file_id: int,
