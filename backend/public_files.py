@@ -225,19 +225,9 @@ def register_compiled_text_template(job_id: str, compiled) -> dict:
     """Materialize a text-defined template as a compatible placeholder DOCX."""
     document = Document()
     document.add_heading(compiled.title, 0)
-    legacy_fields = []
+    legacy_fields = compiled_to_legacy_fields(compiled)
     for field in compiled.fields:
         document.add_paragraph(f"{field.label}：{{{{{field.key}}}}}")
-        field_type = field.value_type if field.value_type in {"text", "multiline", "date", "boolean", "list"} else "text"
-        legacy_fields.append({
-            "key": field.key,
-            "label": field.label,
-            "field_type": field_type,
-            "required": field.required,
-            "repeating": field.value_type in {"list", "table"},
-            "confidence": 1.0,
-            "locator": {"kind": "placeholder", "placeholder": f"{{{{{field.key}}}}}"},
-        })
     stream = io.BytesIO()
     document.save(stream)
     upload = validate_upload("template", f"{compiled.title}.docx", DOCX_MIME, stream.getvalue())
@@ -255,6 +245,23 @@ def register_compiled_text_template(job_id: str, compiled) -> dict:
         confirmation_status="confirmed",
     )
     return template
+
+
+def compiled_to_legacy_fields(compiled) -> list[dict]:
+    """Expose universal fields to the existing mapping/editor contract."""
+    fields = []
+    for field in compiled.fields:
+        field_type = field.value_type if field.value_type in {"text", "multiline", "date", "boolean", "list"} else "text"
+        placement = field.placements[0] if field.placements else None
+        locator = {"kind": "anchor", "anchor": field.label}
+        if placement and placement.kind == "placeholder_replace":
+            locator = {"kind": "placeholder", "placeholder": placement.placeholder}
+        fields.append({
+            "key": field.key, "label": field.label, "field_type": field_type,
+            "required": field.required, "repeating": field.value_type in {"list", "table"},
+            "confidence": 1.0, "locator": locator,
+        })
+    return fields
 
 
 def _read_text(path: str) -> tuple[str, list[str]]:

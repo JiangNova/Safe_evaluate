@@ -138,12 +138,17 @@ def _register_file_resource(job_id: str, version: dict) -> None:
     if kind == "template":
         compiled = version.get("compiled_template_json") or {}
         if compiled.get("fields") is not None:
+            from .template_ir import CompiledTemplate
+            compiled_model = CompiledTemplate.model_validate(compiled)
             public_jobs.add_template(
                 job_id,
                 record["id"],
                 compiled.get("source_format") or os.path.splitext(source_path)[1].lstrip("."),
-                compiled["fields"],
-                preview_metadata=compiled.get("preview_metadata") or {},
+                public_files.compiled_to_legacy_fields(compiled_model),
+                preview_metadata={
+                    **(compiled.get("preview_metadata") or {}),
+                    "compiled_template": compiled_model.model_dump(),
+                },
                 confirmation_status="confirmed",
             )
         else:

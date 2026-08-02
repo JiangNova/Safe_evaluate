@@ -55,6 +55,12 @@ from .template_parser import (
     validate_field_definitions,
 )
 from .text_template_compiler import compile_text_template
+from .document_applicability import assess_document_applicability
+from .document_quality import validate_document_for_finalize
+from .template_ir import CompiledTemplate, compile_legacy_fields
+from .docx_template_compiler import compile_docx_template
+from .docx_renderer import render_compiled_docx
+from .text_document_renderer import render_text_document
 
 
 router = APIRouter(prefix="/api/public/jobs", tags=["public-generic-jobs"])
@@ -161,6 +167,8 @@ def _document_payload(document: dict) -> dict:
         "pdf_file_id": document.get("pdf_file_id"),
         "warnings": document.get("warnings_json") or [],
         "error": document.get("error_json"),
+        "applicability": document.get("applicability_json"),
+        "quality": document.get("quality_json"),
         "updated_at": document["updated_at"],
     }
 
@@ -322,6 +330,11 @@ async def upload_public_job_templates(
         try:
             record = public_files.store_upload(job_id, upload)
             parsed = parse_template(record)
+            compiled = (
+                compile_docx_template(record["storage_path"])
+                if parsed.source_format == "docx"
+                else None
+            )
             if auto_infer and not parsed.fields:
                 text = "\n".join(
                     str(item.get("text", ""))
@@ -353,9 +366,16 @@ async def upload_public_job_templates(
                 job_id,
                 record["id"],
                 parsed.source_format,
-                [field.to_dict() for field in parsed.fields],
+                public_files.compiled_to_legacy_fields(compiled)
+                if compiled and compiled.fields
+                else [field.to_dict() for field in parsed.fields],
                 preview_metadata={
                     **parsed.preview_metadata,
+                    **(
+                        {"compiled_template": compiled.model_dump()}
+                        if compiled and compiled.fields
+                        else {}
+                    ),
                     "warnings": parsed.warnings,
                     "requires_confirmation": parsed.requires_confirmation,
                 },
@@ -495,7 +515,49 @@ async def _execute_evaluation(job_id: str) -> None:
                     template["source_format"], template["fields_json"]
                 )
                 try:
+                    compiled_data = (template.get("preview_metadata_json") or {}).get(
+                        "compiled_template"
+                    )
+                    compiled = (
+                        CompiledTemplate.model_validate(compiled_data)
+                        if compiled_data
+                        else compile_legacy_fields(
+                            template["source_format"], template["fields_json"]
+                        )
+                    )
+                    applicability = await assess_document_applicability(
+                        result, compiled
+                    )
+                    if applicability.status in {
+                        "insufficient_evidence",
+                        "not_applicable",
+                        "failed",
+                    }:
+                        document = public_jobs.add_document(
+                            job_id,
+                            template["id"],
+                            {},
+                            applicability.model_dump(),
+                        )
+                        public_jobs.update_document(
+                            document["id"], status="blocked"
+                        )
+                        errors.append(
+                            {
+                                "template_id": template["id"],
+                                "message": applicability.reason,
+                            }
+                        )
+                        continue
                     mapped = await map_template(str(template["id"]), result, fields)
+                    for compiled_field in compiled.fields:
+                        if (
+                            compiled_field.fill_source == "user"
+                            and compiled_field.key in mapped.fields
+                        ):
+                            mapped.fields[compiled_field.key] = FieldValue(
+                                value="", source_refs=[], confidence=0
+                            )
                     public_jobs.add_document(
                         job_id,
                         template["id"],
@@ -503,6 +565,7 @@ async def _execute_evaluation(job_id: str) -> None:
                             key: value.model_dump()
                             for key, value in mapped.fields.items()
                         },
+                        applicability.model_dump(),
                     )
                     successes += 1
                 except Exception as exc:
@@ -648,6 +711,14 @@ async def _execute_finalization(job_id: str, document_id: int) -> None:
             fields = validate_field_definitions(
                 template["source_format"], template["fields_json"]
             )
+            compiled_data = (template.get("preview_metadata_json") or {}).get(
+                "compiled_template"
+            )
+            compiled = (
+                CompiledTemplate.model_validate(compiled_data)
+                if compiled_data
+                else None
+            )
             job_dir = os.path.abspath(
                 os.path.join(public_files.PUBLIC_JOB_STORAGE_DIR, job_id)
             )
@@ -657,9 +728,19 @@ async def _execute_finalization(job_id: str, document_id: int) -> None:
             changes: dict[str, Any] = {"status": "finalized", "error_json": None}
             if template["source_format"] == "docx":
                 docx_path = os.path.join(job_dir, f"document-{document_id}.docx")
-                rendered = render_docx(
-                    source_file["storage_path"], fields, values, docx_path
-                )
+                if compiled and compiled.kind in {"text_freeform", "text_structured"}:
+                    rendered = render_text_document(
+                        compiled, values, docx_path, draft=False
+                    )
+                elif compiled and compiled.kind == "docx":
+                    rendered = render_compiled_docx(
+                        source_file["storage_path"], compiled, values, docx_path,
+                        draft=False,
+                    )
+                else:
+                    rendered = render_docx(
+                        source_file["storage_path"], fields, values, docx_path
+                    )
                 warnings.extend(asdict(item) for item in rendered.warnings)
                 docx_record = public_files.register_generated_artifact(
                     job_id,
@@ -721,9 +802,79 @@ async def finalize_document(
         raise _api_error(
             404, "document_not_found", "生成文书不存在", stage="finalize"
         )
+    template = public_jobs.get_template(document["template_id"], job_id)
+    if template is None:
+        raise _api_error(404, "template_not_found", "输出模板不存在", stage="finalize")
+    compiled_data = (template.get("preview_metadata_json") or {}).get(
+        "compiled_template"
+    )
+    compiled = (
+        CompiledTemplate.model_validate(compiled_data)
+        if compiled_data
+        else compile_legacy_fields(template["source_format"], template["fields_json"])
+    )
+    quality = validate_document_for_finalize(
+        compiled,
+        document.get("current_fields_json") or {},
+        document.get("warnings_json") or [],
+        applicability_status=(document.get("applicability_json") or {}).get(
+            "status", "applicable"
+        ),
+    )
+    public_jobs.update_document(document_id, quality_json=quality.model_dump())
+    if not quality.can_finalize:
+        raise _api_error(
+            409,
+            "document_quality_blocked",
+            "文书仍有待人工补充或校验的内容，暂不能定稿",
+            stage="finalize",
+        )
     public_jobs.update_document(document_id, status="finalizing", error_json=None)
     background_tasks.add_task(_execute_finalization, job_id, document_id)
     return {"document_id": document_id, "status": "finalizing"}
+
+
+@router.post("/{job_id}/documents/{document_id}/render-draft", status_code=201)
+async def render_document_draft(
+    job_id: str,
+    document_id: int,
+    x_job_token: Annotated[str | None, Header()] = None,
+):
+    _authorize(job_id, x_job_token)
+    document = public_jobs.get_document(document_id, job_id)
+    if document is None:
+        raise _api_error(404, "document_not_found", "生成文书不存在", stage="draft")
+    template = public_jobs.get_template(document["template_id"], job_id)
+    source_file = public_jobs.get_file(template["source_file_id"], job_id)
+    compiled_data = (template.get("preview_metadata_json") or {}).get("compiled_template")
+    compiled = CompiledTemplate.model_validate(compiled_data) if compiled_data else None
+    fields = validate_field_definitions(template["source_format"], template["fields_json"])
+    job_dir = os.path.abspath(os.path.join(public_files.PUBLIC_JOB_STORAGE_DIR, job_id))
+    os.makedirs(job_dir, exist_ok=True)
+    values = document.get("current_fields_json") or {}
+    if template["source_format"] == "docx":
+        output = os.path.join(job_dir, f"document-{document_id}-draft.docx")
+        if compiled and compiled.kind in {"text_freeform", "text_structured"}:
+            rendered = render_text_document(compiled, values, output, draft=True)
+        elif compiled and compiled.kind == "docx":
+            rendered = render_compiled_docx(source_file["storage_path"], compiled, values, output, draft=True)
+        else:
+            rendered = render_docx(source_file["storage_path"], fields, values, output)
+        record = public_files.register_generated_artifact(
+            job_id, rendered.path,
+            f"{Path(source_file['original_name']).stem}-草稿.docx",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+    else:
+        output = os.path.join(job_dir, f"document-{document_id}-draft.pdf")
+        rendered = render_pdf(source_file["storage_path"], fields, values, output)
+        record = public_files.register_generated_artifact(
+            job_id, rendered.path,
+            f"{Path(source_file['original_name']).stem}-草稿.pdf", "application/pdf",
+        )
+    warnings = [asdict(item) for item in rendered.warnings]
+    public_jobs.update_document(document_id, warnings_json=warnings, status="draft")
+    return {"document_id": document_id, "status": "draft", "file": _file_payload(record), "warnings": warnings}
 
 
 @router.post("/{job_id}/artifacts/archive")

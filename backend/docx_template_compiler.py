@@ -114,6 +114,8 @@ def extract_docx_candidates(path: str) -> list[PlacementCandidate]:
 
 
 def _field_key(label: str, index: int) -> str:
+    if re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", label):
+        return label
     known = {
         "姓名": "name", "员工姓名": "employee_name", "日期": "date",
         "处罚": "action", "处罚方式": "action", "单位名称": "unit_name",

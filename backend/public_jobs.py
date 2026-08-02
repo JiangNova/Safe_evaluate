@@ -105,6 +105,8 @@ def init_public_job_db() -> None:
                 pdf_file_id             INTEGER REFERENCES public_job_files(id) ON DELETE SET NULL,
                 warnings_json           TEXT NOT NULL DEFAULT '[]',
                 error_json              TEXT,
+                applicability_json      TEXT,
+                quality_json            TEXT,
                 created_at              TEXT NOT NULL,
                 updated_at              TEXT NOT NULL,
                 UNIQUE(job_id, template_id)
@@ -126,6 +128,13 @@ def init_public_job_db() -> None:
         }
         if "workspace_id" not in columns:
             conn.execute("ALTER TABLE public_jobs ADD COLUMN workspace_id TEXT")
+        document_columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(public_job_documents)")
+        }
+        if "applicability_json" not in document_columns:
+            conn.execute("ALTER TABLE public_job_documents ADD COLUMN applicability_json TEXT")
+        if "quality_json" not in document_columns:
+            conn.execute("ALTER TABLE public_job_documents ADD COLUMN quality_json TEXT")
 
 
 def _utc_now() -> datetime:
@@ -502,7 +511,12 @@ def update_template_fields(
     return updated
 
 
-def add_document(job_id: str, template_id: int, ai_fields: dict) -> dict:
+def add_document(
+    job_id: str,
+    template_id: int,
+    ai_fields: dict,
+    applicability: dict | None = None,
+) -> dict:
     now = _iso(_utc_now())
     encoded = _encode_json(ai_fields)
     with _get_db() as conn:
@@ -510,10 +524,10 @@ def add_document(job_id: str, template_id: int, ai_fields: dict) -> dict:
             """
             INSERT INTO public_job_documents (
                 job_id, template_id, ai_initial_fields_json,
-                current_fields_json, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?)
+                current_fields_json, applicability_json, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (job_id, template_id, encoded, encoded, now, now),
+            (job_id, template_id, encoded, encoded, _encode_json(applicability), now, now),
         )
         record_id = int(cursor.lastrowid)
     return _fetch_related("public_job_documents", record_id)
@@ -553,6 +567,8 @@ def update_document(document_id: int, **changes: Any) -> dict:
         "pdf_file_id",
         "warnings_json",
         "error_json",
+        "applicability_json",
+        "quality_json",
     }
     unknown = set(changes) - allowed
     if unknown:
