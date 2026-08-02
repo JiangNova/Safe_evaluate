@@ -52,6 +52,7 @@ services:
       - ./website/dist:/usr/share/nginx/website:ro
       - ./frontend-public/dist:/usr/share/nginx/html/evaluate:ro
       - ./frontend/dist:/usr/share/nginx/html/evaluate_tianxin:ro
+      - ./frontend-leadership/dist:/usr/share/nginx/html/leader-assistant:ro
       # - ./ssl:/etc/nginx/ssl:ro   # HTTPS：配置 SSL 证书后取消注释
     depends_on:
       - backend
