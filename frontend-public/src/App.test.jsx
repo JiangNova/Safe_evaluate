@@ -37,7 +37,20 @@ describe('public evaluation application', () => {
     expect(appSource).toContain('path="/"');
     expect(appSource).toContain('path="/summary"');
     expect(appSource).toContain('path="/report/:id"');
+    expect(appSource).toContain('path="/jobs/:jobId/templates"');
+    expect(appSource).toContain('path="/jobs/:jobId/workspace"');
     expect(appSource).not.toMatch(/path="\/(login|history|stats|rules)/i);
+  });
+
+  it('keeps material, basis, and template uploads separate', () => {
+    const wizardSource = readSource('pages/JobWizardPage.jsx');
+
+    for (const kind of ['material', 'basis', 'template']) {
+      expect(wizardSource).toContain(`kind="${kind}"`);
+    }
+    expect(wizardSource).toContain('评估目标');
+    expect(wizardSource).toContain('评估依据');
+    expect(wizardSource).toContain('输出模板');
   });
 
   it.each(['天心区', '公安分局', '派出所', '历史记录', '统计分析', '规则管理'])(
@@ -54,4 +67,3 @@ describe('public evaluation application', () => {
     expect(reportSource).toContain('返回继续评估');
   });
 });
-
