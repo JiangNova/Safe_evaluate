@@ -43,6 +43,7 @@ from .generic_evaluator import (
 )
 from .models import (
     DocumentFieldsUpdate,
+    JobTextResourceRequest,
     PublicJobCreateRequest,
     PublicJobCreateResponse,
     RegenerateFieldRequest,
@@ -222,6 +223,21 @@ async def get_public_job(
 ):
     job = _authorize(job_id, x_job_token)
     return _job_payload(job)
+
+
+@router.post("/{job_id}/resources/text", status_code=201)
+async def add_public_job_text_resource(
+    job_id: str,
+    body: JobTextResourceRequest,
+    x_job_token: Annotated[str | None, Header()] = None,
+):
+    _authorize(job_id, x_job_token)
+    if body.resource_kind not in {"basis", "template"}:
+        raise _api_error(400, "invalid_resource_kind", "文字资源用途无效", stage="upload")
+    resource = public_jobs.bind_ephemeral_text_resource(
+        job_id, body.resource_kind, body.source_text.strip(), body.name
+    )
+    return _resource_payload(resource)
 
 
 @router.delete("/{job_id}", status_code=204)

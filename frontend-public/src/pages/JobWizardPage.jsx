@@ -66,6 +66,7 @@ export default function JobWizardPage() {
         <h1>按你的依据评估，按你的模板输出</h1>
         <span>匿名任务将在创建 24 小时后自动清理，请及时下载结果。</span>
       </header>
+      <a className={styles.workspaceHint} href="/workspace">有固定的评估标准或输出模板？进入长期工作区复用 →</a>
 
       <StepIndicator steps={STEPS} current={step} />
 
@@ -146,4 +147,3 @@ export default function JobWizardPage() {
     </div>
   );
 }
-

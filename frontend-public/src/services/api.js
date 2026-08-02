@@ -102,6 +102,22 @@ export function createScenarioJob(workspaceId, scenarioId) {
   return api.post(`/workspaces/${workspaceId}/scenarios/${scenarioId}/jobs`, null, { headers: workspaceHeaders(workspaceId) });
 }
 
+export function createCustomWorkspaceJob(workspaceId, goal, basisVersionIds, templateVersionIds) {
+  return api.post(`/workspaces/${workspaceId}/jobs`, {
+    goal,
+    basis_version_ids: basisVersionIds,
+    template_version_ids: templateVersionIds,
+  }, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function addJobTextResource(jobId, resourceKind, sourceText, name) {
+  return api.post(`/jobs/${jobId}/resources/text`, {
+    resource_kind: resourceKind,
+    source_text: sourceText,
+    name,
+  }, { headers: jobHeaders(jobId) });
+}
+
 export function createPublicJob(goal) {
   return api.post('/jobs', { goal });
 }

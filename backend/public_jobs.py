@@ -256,6 +256,32 @@ def list_job_resources(job_id: str, resource_kind: str | None = None) -> list[di
     return [_decode_row(row) for row in rows]
 
 
+def bind_ephemeral_text_resource(
+    job_id: str, resource_kind: str, source_text: str, name: str
+) -> dict:
+    """Bind an upload-session-only text resource using a private negative ID."""
+    existing = list_job_resources(job_id)
+    ephemeral_id = -(len(existing) + 1)
+    return bind_job_resource(
+        job_id,
+        resource_kind,
+        ephemeral_id,
+        {
+            "asset_id": None,
+            "asset_name": name.strip() or "文字输入",
+            "asset_type": resource_kind,
+            "version_number": None,
+            "source_kind": "text_structured" if resource_kind == "template" else "text_freeform",
+            "source_text": source_text,
+            "original_name": None,
+            "mime_type": "text/plain",
+            "size": len(source_text.encode("utf-8")),
+            "parsed_content": None,
+            "compiled_template": None,
+        },
+    )
+
+
 def authorize_job(job_id: str, token: str) -> dict:
     row = _fetch_job_row(job_id)
     if row is None:

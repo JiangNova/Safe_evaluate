@@ -590,6 +590,129 @@
   }
 }
 
+.workspaceHint {
+  display: inline-block;
+  margin: -16px 0 28px;
+  color: var(--color-primary);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.jobModeCards,
+.scenarioGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.jobModeCards > button,
+.scenarioCard {
+  display: grid;
+  gap: 7px;
+  padding: 20px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  background: white;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.jobModeCards > button span,
+.scenarioCard p,
+.scenarioCard small {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.jobModeCards .activeJobMode,
+.scenarioCard.selectedScenario {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.scenarioCard > span {
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .14em;
+}
+
+.scenarioCard strong { margin-top: 15px; font-size: 18px; }
+.scenarioCard p { min-height: 45px; }
+
+.customJobForm {
+  display: grid;
+  gap: 22px;
+}
+
+.customJobForm > div,
+.goalLabel,
+.materialPanel {
+  padding: 24px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  background: white;
+}
+
+.customJobForm h2 { margin-bottom: 4px; font-size: 19px; }
+.customJobForm > div > p { margin-bottom: 16px; color: var(--text-secondary); font-size: 13px; }
+.goalLabel { display: grid; gap: 10px; color: var(--text-primary); font-weight: 700; }
+.goalLabel textarea { min-height: 120px; padding: 12px; border: 1px solid var(--border-input); border-radius: var(--radius-md); font: inherit; font-weight: 400; resize: vertical; }
+.materialPanel { margin-top: 22px; }
+
+.resourcePicker {
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+}
+
+.pickerModes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--bg-page);
+}
+
+.pickerModes button { padding: 11px; color: var(--text-secondary); font-size: 13px; }
+.pickerModes .activePickerMode { background: white; color: var(--color-primary); font-weight: 700; }
+.savedChoices, .textResourceForm { display: grid; gap: 10px; padding: 16px; }
+.savedChoices > label { display: flex; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--border-card); border-radius: var(--radius-sm); }
+.savedChoices > label span { display: grid; gap: 2px; }
+.savedChoices small { color: var(--text-muted); }
+.savedChoices > p { padding: 20px; color: var(--text-muted); text-align: center; }
+
+.compactDropzone {
+  display: grid;
+  min-height: 130px;
+  padding: 18px;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  border: 1px dashed var(--border-dashed);
+  margin: 16px;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.compactDropzone input { position: absolute; width: 1px; height: 1px; clip: rect(0 0 0 0); }
+.compactDropzone span { color: var(--text-muted); font-size: 12px; }
+.textResourceForm input, .textResourceForm textarea { padding: 10px; border: 1px solid var(--border-input); border-radius: var(--radius-sm); font: inherit; }
+.textResourceForm textarea { min-height: 120px; resize: vertical; }
+.textResourceForm > button { justify-self: end; }
+
+.selectedResources { display: grid; gap: 7px; padding: 0 16px 16px; }
+.selectedResources li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-page); }
+.selectedResources li > span { display: grid; flex: 1; gap: 2px; }
+.selectedResources small { color: var(--text-muted); }
+.selectedResources li > button { color: var(--color-danger); font-size: 12px; }
+.saveInline { display: flex; gap: 5px; color: var(--text-secondary); font-size: 12px; }
+
+@media (max-width: 640px) {
+  .jobModeCards, .scenarioGrid { grid-template-columns: 1fr; }
+  .selectedResources li { align-items: flex-start; flex-wrap: wrap; }
+}
+
 .compactHeader {
   display: flex;
   align-items: flex-end;

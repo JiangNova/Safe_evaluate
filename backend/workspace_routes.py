@@ -18,6 +18,7 @@ from .workspace_models import (
     ScenarioUpdateRequest,
     TextVersionCreateRequest,
     WorkspaceCreateRequest,
+    WorkspaceJobCreateRequest,
     WorkspaceRecoverRequest,
 )
 from .template_parser import parse_template
@@ -156,6 +157,32 @@ def _register_file_resource(job_id: str, version: dict) -> None:
                     "requires_confirmation": parsed.requires_confirmation,
                 },
             )
+
+
+def _create_bound_job(
+    workspace_id: str,
+    goal: str,
+    basis_version_ids: list[int],
+    template_version_ids: list[int],
+) -> tuple[dict, str]:
+    job, token = public_jobs.create_job(goal, workspace_id=workspace_id)
+    try:
+        selected = [("basis", item) for item in basis_version_ids] + [
+            ("template", item) for item in template_version_ids
+        ]
+        for resource_kind, version_id in selected:
+            version = workspace_assets.get_asset_version(version_id, workspace_id)
+            if version is None or version["asset_type"] != resource_kind:
+                raise PermissionError("选择的资源版本无效")
+            public_jobs.bind_job_resource(
+                job["id"], resource_kind, version_id, _resource_snapshot(version)
+            )
+            if version["source_kind"] == "file":
+                _register_file_resource(job["id"], version)
+    except Exception:
+        public_jobs.delete_jobs([job["id"]])
+        raise
+    return job, token
 
 
 def _authorize(workspace_id: str, token: str | None) -> dict:
@@ -390,30 +417,42 @@ async def create_job_from_scenario(
     scenario = workspace_assets.get_scenario(scenario_id, workspace_id)
     if scenario is None or scenario.get("deleted_at") is not None:
         raise _api_error(404, "scenario_not_found", "场景不存在", stage="workspace_scenario")
-    job, token = public_jobs.create_job(
-        scenario["goal_template"], workspace_id=workspace_id
-    )
     try:
-        selected = [
-            ("basis", version_id)
-            for version_id in (scenario.get("basis_version_ids_json") or [])
-        ] + [
-            ("template", version_id)
-            for version_id in (scenario.get("template_version_ids_json") or [])
-        ]
-        for resource_kind, version_id in selected:
-            version = workspace_assets.get_asset_version(version_id, workspace_id)
-            if version is None or version["asset_type"] != resource_kind:
-                raise PermissionError("场景引用的资源版本无效")
-            public_jobs.bind_job_resource(
-                job["id"], resource_kind, version_id, _resource_snapshot(version)
-            )
-            if version["source_kind"] == "file":
-                _register_file_resource(job["id"], version)
+        job, token = _create_bound_job(
+            workspace_id,
+            scenario["goal_template"],
+            scenario.get("basis_version_ids_json") or [],
+            scenario.get("template_version_ids_json") or [],
+        )
     except Exception as exc:
-        public_jobs.delete_jobs([job["id"]])
         if isinstance(exc, PermissionError):
             raise _api_error(403, "foreign_asset_version", str(exc), stage="job_create")
+        raise _api_error(400, "resource_snapshot_failed", str(exc), stage="job_create")
+    return {
+        "job_id": job["id"],
+        "access_token": token,
+        "status": job["status"],
+        "expires_at": job["expires_at"],
+    }
+
+
+@router.post("/{workspace_id}/jobs", status_code=201)
+async def create_custom_workspace_job(
+    workspace_id: str,
+    body: WorkspaceJobCreateRequest,
+    x_workspace_token: Annotated[str | None, Header()] = None,
+):
+    _authorize(workspace_id, x_workspace_token)
+    try:
+        job, token = _create_bound_job(
+            workspace_id,
+            body.goal,
+            body.basis_version_ids,
+            body.template_version_ids,
+        )
+    except PermissionError as exc:
+        raise _api_error(403, "foreign_asset_version", str(exc), stage="job_create")
+    except (ValueError, LookupError) as exc:
         raise _api_error(400, "resource_snapshot_failed", str(exc), stage="job_create")
     return {
         "job_id": job["id"],

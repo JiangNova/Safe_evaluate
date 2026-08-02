@@ -113,4 +113,20 @@ describe('public evaluation application', () => {
       expect(source).toContain(label);
     }
   });
+
+  it('allows saved, uploaded, and text resources in a new evaluation', () => {
+    const source = readSource('components/ResourcePicker.jsx');
+
+    for (const label of ['从工作区选择', '临时上传', '文字输入', '保存到工作区']) {
+      expect(source).toContain(label);
+    }
+  });
+
+  it('starts from either a fixed scenario or a custom evaluation', () => {
+    const source = readSource('pages/WorkspaceNewJobPage.jsx');
+
+    expect(source).toContain('使用固定场景');
+    expect(source).toContain('自定义新评估');
+    expect(source).toContain('ResourcePicker');
+  });
 });

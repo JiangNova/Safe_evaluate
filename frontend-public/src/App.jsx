@@ -7,6 +7,7 @@ import TemplateConfirmPage from './pages/TemplateConfirmPage';
 import JobWorkspacePage from './pages/JobWorkspacePage';
 import WorkspaceEntryPage from './pages/WorkspaceEntryPage';
 import WorkspaceLibraryPage from './pages/WorkspaceLibraryPage';
+import WorkspaceNewJobPage from './pages/WorkspaceNewJobPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<JobWizardPage />} />
         <Route path="/workspace" element={<WorkspaceEntryPage />} />
         <Route path="/workspace/:workspaceId/library" element={<WorkspaceLibraryPage />} />
+        <Route path="/workspace/:workspaceId/new" element={<WorkspaceNewJobPage />} />
         <Route path="/jobs/:jobId/templates" element={<TemplateConfirmPage />} />
         <Route path="/jobs/:jobId/workspace" element={<JobWorkspacePage />} />
         <Route path="/summary" element={<SummaryPage />} />

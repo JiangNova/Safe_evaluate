@@ -44,3 +44,9 @@ class ScenarioCreateRequest(BaseModel):
 
 class ScenarioUpdateRequest(ScenarioCreateRequest):
     pass
+
+
+class WorkspaceJobCreateRequest(BaseModel):
+    goal: str = Field(min_length=1, max_length=4000)
+    basis_version_ids: list[int] = Field(default_factory=list)
+    template_version_ids: list[int] = Field(default_factory=list)
