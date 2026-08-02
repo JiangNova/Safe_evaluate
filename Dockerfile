@@ -17,7 +17,12 @@ RUN set -eux; \
         fi; \
     done; \
     apt-get update; \
-    apt-get install -y --no-install-recommends gcc; \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        fonts-noto-cjk \
+        libreoffice-writer \
+        tesseract-ocr \
+        tesseract-ocr-chi-sim; \
     rm -rf /var/lib/apt/lists/*
 
 # 安装Python依赖
@@ -29,7 +34,7 @@ COPY backend/ ./backend/
 COPY requirement/ ./requirement/
 
 # 创建数据目录
-RUN mkdir -p /app/backend/data/reports /app/backend/data/images
+RUN mkdir -p /app/backend/data/reports /app/backend/data/images /app/backend/data/public_jobs /app/backend/data/public_workspaces
 
 EXPOSE 8000
 

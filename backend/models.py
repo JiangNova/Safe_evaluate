@@ -24,6 +24,48 @@ class EvaluateResponse(BaseModel):
     error: Optional[str] = None
 
 
+# ===== Anonymous generic public jobs =====
+
+class PublicJobCreateResponse(BaseModel):
+    job_id: str
+    access_token: str
+    status: str
+    expires_at: datetime
+
+
+class PublicJobStatusResponse(BaseModel):
+    id: str
+    goal: str
+    status: str
+    result: Optional[dict] = None
+    errors: Optional[dict] = None
+    created_at: datetime
+    expires_at: datetime
+
+
+class PublicJobCreateRequest(BaseModel):
+    goal: str = Field(min_length=1, max_length=4000)
+
+
+class JobTextResourceRequest(BaseModel):
+    resource_kind: str
+    source_text: str = Field(min_length=1, max_length=100000)
+    name: str = Field(default="文字输入", max_length=160)
+
+
+class TemplateFieldsUpdate(BaseModel):
+    fields: list[dict]
+    preview_metadata: Optional[dict] = None
+
+
+class DocumentFieldsUpdate(BaseModel):
+    fields: dict
+
+
+class RegenerateFieldRequest(BaseModel):
+    instruction: str = Field(default="", max_length=2000)
+
+
 # ===== Finding & Report =====
 
 FINDING_CATEGORIES = {

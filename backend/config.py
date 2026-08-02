@@ -41,6 +41,27 @@ OUTPUT_TEMPLATE_FILES = {
 REPORT_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "reports")
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
+# Anonymous generic public evaluation jobs
+PUBLIC_JOB_STORAGE_DIR = os.path.join(
+    os.path.dirname(__file__), "data", "public_jobs"
+)
+PUBLIC_JOB_EXPIRY_HOURS = int(os.getenv("PUBLIC_JOB_EXPIRY_HOURS", "24"))
+PUBLIC_JOB_MAX_FILES = int(os.getenv("PUBLIC_JOB_MAX_FILES", "30"))
+PUBLIC_JOB_MAX_TOTAL_SIZE = int(
+    os.getenv("PUBLIC_JOB_MAX_TOTAL_SIZE", str(150 * 1024 * 1024))
+)
+LIBREOFFICE_COMMAND = os.getenv("LIBREOFFICE_COMMAND", "soffice")
+TESSERACT_COMMAND = os.getenv("TESSERACT_COMMAND", "tesseract")
+PUBLIC_JOB_CREATE_RATE = int(os.getenv("PUBLIC_JOB_CREATE_RATE", "20"))
+PUBLIC_JOB_MAX_CONCURRENCY = int(os.getenv("PUBLIC_JOB_MAX_CONCURRENCY", "2"))
+
+# Recoverable anonymous workspaces and reusable assets
+PUBLIC_WORKSPACE_ACTIVE_DAYS = int(os.getenv("PUBLIC_WORKSPACE_ACTIVE_DAYS", "365"))
+PUBLIC_WORKSPACE_GRACE_DAYS = int(os.getenv("PUBLIC_WORKSPACE_GRACE_DAYS", "30"))
+PUBLIC_WORKSPACE_STORAGE_DIR = os.path.join(
+    os.path.dirname(__file__), "data", "public_workspaces"
+)
+
 # Auth
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 USERS_JSON = os.getenv("APP_USERS", "{}")
@@ -72,6 +93,8 @@ IMAGE_STORAGE_DIR = os.path.join(os.path.dirname(__file__), "data", "images")
 os.makedirs(REPORT_STORAGE_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(IMAGE_STORAGE_DIR, exist_ok=True)
+os.makedirs(PUBLIC_JOB_STORAGE_DIR, exist_ok=True)
+os.makedirs(PUBLIC_WORKSPACE_STORAGE_DIR, exist_ok=True)
 
 # ----- Startup check -----
 _STARTUP_OK = True

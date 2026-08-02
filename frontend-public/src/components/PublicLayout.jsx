@@ -9,12 +9,12 @@ export default function PublicLayout() {
           <span className={styles.brandMark} aria-hidden="true">A</span>
           <span className={styles.brandText}>
             <strong>AGULAB</strong>
-            <small>自动安全评估平台</small>
+            <small>通用自动评估平台</small>
           </span>
         </a>
         <a className={styles.homeLink} href="/">
           返回官网
-          <span aria-hidden="true">↗</span>
+          <span aria-hidden="true">→</span>
         </a>
       </header>
 
@@ -24,9 +24,8 @@ export default function PublicLayout() {
 
       <footer className={styles.footer}>
         <span>AGULAB · AI EMPOWERMENT</span>
-        <span>评估结果仅供安全检查与整改参考</span>
+        <span>匿名任务保留 24 小时，请及时下载结果</span>
       </footer>
     </div>
   );
 }
-
