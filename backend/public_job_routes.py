@@ -54,6 +54,7 @@ from .template_parser import (
     parse_template,
     validate_field_definitions,
 )
+from .text_template_compiler import compile_text_template
 
 
 router = APIRouter(prefix="/api/public/jobs", tags=["public-generic-jobs"])
@@ -234,9 +235,18 @@ async def add_public_job_text_resource(
     _authorize(job_id, x_job_token)
     if body.resource_kind not in {"basis", "template"}:
         raise _api_error(400, "invalid_resource_kind", "文字资源用途无效", stage="upload")
+    compiled = None
+    if body.resource_kind == "template":
+        compiled = compile_text_template("freeform", body.source_text.strip())
     resource = public_jobs.bind_ephemeral_text_resource(
-        job_id, body.resource_kind, body.source_text.strip(), body.name
+        job_id,
+        body.resource_kind,
+        body.source_text.strip(),
+        body.name,
+        compiled.model_dump() if compiled else None,
     )
+    if compiled:
+        public_files.register_compiled_text_template(job_id, compiled)
     return _resource_payload(resource)
 
 
@@ -414,9 +424,11 @@ def _evaluation_prerequisites(job_id: str) -> tuple[list[dict], list[dict], list
     missing = []
     if not materials:
         missing.append("material")
-    if not bases:
+    basis_resources = public_jobs.list_job_resources(job_id, "basis")
+    template_resources = public_jobs.list_job_resources(job_id, "template")
+    if not bases and not basis_resources:
         missing.append("basis")
-    if not templates:
+    if not templates and not template_resources:
         missing.append("template")
     if missing:
         raise _api_error(
@@ -444,6 +456,16 @@ async def _execute_evaluation(job_id: str) -> None:
             material_files, basis_files, templates = _evaluation_prerequisites(job_id)
             materials = [public_files.extract_source(item) for item in material_files]
             bases = [public_files.extract_source(item) for item in basis_files]
+            for resource in public_jobs.list_job_resources(job_id, "basis"):
+                snapshot = resource.get("snapshot_json") or {}
+                if snapshot.get("source_kind") != "file" and snapshot.get("source_text"):
+                    bases.append(public_files.ParsedSource(
+                        file_id=-int(resource["id"]),
+                        filename=snapshot.get("asset_name") or "文字评估标准",
+                        media_type="text",
+                        chunks=[public_files.SourceChunk(snapshot["source_text"], f"workspace-version:{resource['asset_version_id']}")],
+                        warnings=[],
+                    ))
             image_inputs = []
             for item in material_files:
                 if Path(item["safe_name"]).suffix.lower() in {

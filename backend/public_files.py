@@ -221,6 +221,42 @@ def register_generated_artifact(
     )
 
 
+def register_compiled_text_template(job_id: str, compiled) -> dict:
+    """Materialize a text-defined template as a compatible placeholder DOCX."""
+    document = Document()
+    document.add_heading(compiled.title, 0)
+    legacy_fields = []
+    for field in compiled.fields:
+        document.add_paragraph(f"{field.label}：{{{{{field.key}}}}}")
+        field_type = field.value_type if field.value_type in {"text", "multiline", "date", "boolean", "list"} else "text"
+        legacy_fields.append({
+            "key": field.key,
+            "label": field.label,
+            "field_type": field_type,
+            "required": field.required,
+            "repeating": field.value_type in {"list", "table"},
+            "confidence": 1.0,
+            "locator": {"kind": "placeholder", "placeholder": f"{{{{{field.key}}}}}"},
+        })
+    stream = io.BytesIO()
+    document.save(stream)
+    upload = validate_upload("template", f"{compiled.title}.docx", DOCX_MIME, stream.getvalue())
+    record = store_upload(job_id, upload)
+    template = public_jobs.add_template(
+        job_id,
+        record["id"],
+        "docx",
+        legacy_fields,
+        preview_metadata={
+            "compiled_template": compiled.model_dump(),
+            "text_defined": True,
+            "paragraphs": [{"text": f"{field.label}：{{{{{field.key}}}}}"} for field in compiled.fields],
+        },
+        confirmation_status="confirmed",
+    )
+    return template
+
+
 def _read_text(path: str) -> tuple[str, list[str]]:
     data = Path(path).read_bytes()
     for encoding in ("utf-8-sig", "gb18030"):

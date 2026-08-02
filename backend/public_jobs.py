@@ -257,7 +257,8 @@ def list_job_resources(job_id: str, resource_kind: str | None = None) -> list[di
 
 
 def bind_ephemeral_text_resource(
-    job_id: str, resource_kind: str, source_text: str, name: str
+    job_id: str, resource_kind: str, source_text: str, name: str,
+    compiled_template: dict | None = None,
 ) -> dict:
     """Bind an upload-session-only text resource using a private negative ID."""
     existing = list_job_resources(job_id)
@@ -277,7 +278,7 @@ def bind_ephemeral_text_resource(
             "mime_type": "text/plain",
             "size": len(source_text.encode("utf-8")),
             "parsed_content": None,
-            "compiled_template": None,
+            "compiled_template": compiled_template,
         },
     )
 

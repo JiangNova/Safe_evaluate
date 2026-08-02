@@ -8,7 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 
-from . import public_jobs, public_workspaces, workspace_assets
+from . import public_files, public_jobs, public_workspaces, workspace_assets
 from .config import MAX_FILE_SIZE
 from .workspace_assets import WorkspaceAssetSource
 from .workspace_models import (
@@ -22,6 +22,8 @@ from .workspace_models import (
     WorkspaceRecoverRequest,
 )
 from .template_parser import parse_template
+from .text_template_compiler import compile_text_template
+from .docx_template_compiler import compile_docx_template
 
 
 router = APIRouter(prefix="/api/public/workspaces", tags=["public-workspaces"])
@@ -179,6 +181,16 @@ def _create_bound_job(
             )
             if version["source_kind"] == "file":
                 _register_file_resource(job["id"], version)
+            elif resource_kind == "template":
+                compiled_data = version.get("compiled_template_json")
+                if not compiled_data:
+                    compiled_data = compile_text_template(
+                        version["source_kind"], version.get("source_text") or ""
+                    ).model_dump()
+                from .template_ir import CompiledTemplate
+                public_files.register_compiled_text_template(
+                    job["id"], CompiledTemplate.model_validate(compiled_data)
+                )
     except Exception:
         public_jobs.delete_jobs([job["id"]])
         raise
@@ -320,15 +332,20 @@ async def create_text_version(
     x_workspace_token: Annotated[str | None, Header()] = None,
 ):
     _authorize(workspace_id, x_workspace_token)
-    _require_asset(workspace_id, asset_id)
+    asset = _require_asset(workspace_id, asset_id)
     try:
+        compiled = body.compiled_template
+        if asset["asset_type"] == "template" and compiled is None:
+            compiled = compile_text_template(
+                body.source_kind, body.source_text
+            ).model_dump()
         version = workspace_assets.add_asset_version(
             asset_id,
             WorkspaceAssetSource(
                 source_kind=body.source_kind,
                 source_text=body.source_text,
                 parsed_content=body.parsed_content,
-                compiled_template=body.compiled_template,
+                compiled_template=compiled,
             ),
         )
     except ValueError as exc:
@@ -360,6 +377,9 @@ async def create_file_version(
         with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as temporary:
             temporary.write(data)
             temporary_path = temporary.name
+        compiled = None
+        if asset["asset_type"] == "template" and extension == ".docx":
+            compiled = compile_docx_template(temporary_path).model_dump()
         version = workspace_assets.add_asset_version(
             asset_id,
             WorkspaceAssetSource(
@@ -367,6 +387,7 @@ async def create_file_version(
                 file_path=temporary_path,
                 original_name=filename,
                 mime_type=file.content_type,
+                compiled_template=compiled,
             ),
         )
     finally:
