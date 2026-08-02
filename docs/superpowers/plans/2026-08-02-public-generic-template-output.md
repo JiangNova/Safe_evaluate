@@ -8,6 +8,8 @@
 
 **Tech Stack:** FastAPI 0.115, SQLite, Pydantic 2, python-docx 1.1.2, PyMuPDF, Pillow, pytesseract/Tesseract, LibreOffice Headless, React 18, React Router 7, Axios, Vitest, Python unittest.
 
+> **Execution note (2026-08-02):** The local pip proxy cannot install pytest. With user approval, all Python test examples in this plan are implemented with the repository's existing standard-library `unittest` style. Test behavior and coverage remain the same; no backend test-only dependency file is required.
+
 ## Global Constraints
 
 - Public jobs are anonymous and expire 24 hours after creation.
@@ -24,7 +26,6 @@
 ## File Structure
 
 - `backend/public_jobs.py`: job/token lifecycle, SQLite persistence, file metadata, document revisions, expiry cleanup.
-- `backend/requirements-dev.txt`: backend test-only dependencies, including pytest.
 - `backend/public_files.py`: file validation, safe storage, source-addressable material/basis extraction.
 - `backend/template_parser.py`: DOCX placeholders and PDF/OCR field candidates.
 - `backend/generic_evaluator.py`: canonical evaluation and template-field mapping prompts/API calls.
@@ -58,7 +59,6 @@
 **Files:**
 - Create: `backend/public_jobs.py`
 - Create: `backend/test_public_jobs.py`
-- Create: `backend/requirements-dev.txt`
 - Modify: `backend/config.py`
 - Modify: `backend/models.py`
 
@@ -66,17 +66,7 @@
 - Produces: `create_job(goal: str) -> tuple[dict, str]`, `authorize_job(job_id: str, token: str) -> dict`, `update_job(job_id: str, **changes) -> dict`, `add_file(job_id: str, kind: str, metadata: dict) -> dict`, `add_template(job_id: str, source_file_id: int, source_format: str, fields: list[dict]) -> dict`, `add_document(job_id: str, template_id: int, ai_fields: dict) -> dict`, `add_revision(document_id: int, field_key: str, before: object, after: object, source: str) -> dict`, `delete_expired_jobs(now: datetime | None = None) -> list[str]`.
 - Produces: `PublicJobCreateResponse`, `PublicJobStatusResponse` Pydantic models.
 
-- [ ] **Step 1: Add and install the backend test dependency file**
-
-```text
--r requirements.txt
-pytest==8.3.5
-```
-
-Run: `.\.venv\Scripts\python.exe -m pip install -r backend/requirements-dev.txt`
-Expected: pytest installs successfully without changing production dependencies.
-
-- [ ] **Step 2: Write failing token, schema, and expiry tests**
+- [ ] **Step 1: Write failing token, schema, and expiry tests**
 
 ```python
 def test_create_job_returns_raw_token_but_persists_only_hash(tmp_job_db, monkeypatch):
@@ -94,12 +84,12 @@ def test_delete_expired_jobs_returns_job_ids(tmp_job_db, monkeypatch):
     assert public_jobs.delete_expired_jobs(now=datetime(2026, 8, 2, tzinfo=timezone.utc)) == [job["id"]]
 ```
 
-- [ ] **Step 3: Run the focused test and verify failure**
+- [ ] **Step 2: Run the focused test and verify failure**
 
-Run: `.\.venv\Scripts\python.exe -m pytest backend/test_public_jobs.py -q`
+Run: `.\.venv\Scripts\python.exe -m unittest backend.test_public_jobs -v`
 Expected: FAIL because `backend.public_jobs` does not exist.
 
-- [ ] **Step 4: Implement the four job tables, SHA-256 token hashing, UTC timestamps, and CRUD**
+- [ ] **Step 3: Implement the four job tables, SHA-256 token hashing, UTC timestamps, and CRUD**
 
 ```python
 def create_job(goal: str) -> tuple[dict, str]:
@@ -116,15 +106,15 @@ def create_job(goal: str) -> tuple[dict, str]:
 
 Create `public_jobs`, `public_job_files`, `public_job_templates`, `public_job_documents`, and `public_job_revisions` with foreign keys and `ON DELETE CASCADE`. Add `PUBLIC_JOB_STORAGE_DIR`, `PUBLIC_JOB_EXPIRY_HOURS=24`, `PUBLIC_JOB_MAX_FILES=30`, and `PUBLIC_JOB_MAX_TOTAL_SIZE=157286400` to config.
 
-- [ ] **Step 5: Run tests and verify pass**
+- [ ] **Step 4: Run tests and verify pass**
 
-Run: `.\.venv\Scripts\python.exe -m pytest backend/test_public_jobs.py -q`
+Run: `.\.venv\Scripts\python.exe -m unittest backend.test_public_jobs -v`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```powershell
-git add backend/public_jobs.py backend/test_public_jobs.py backend/requirements-dev.txt backend/config.py backend/models.py
+git add backend/public_jobs.py backend/test_public_jobs.py backend/config.py backend/models.py
 git commit -m "feat: add anonymous public job storage"
 ```
 

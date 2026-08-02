@@ -24,6 +24,25 @@ class EvaluateResponse(BaseModel):
     error: Optional[str] = None
 
 
+# ===== Anonymous generic public jobs =====
+
+class PublicJobCreateResponse(BaseModel):
+    job_id: str
+    access_token: str
+    status: str
+    expires_at: datetime
+
+
+class PublicJobStatusResponse(BaseModel):
+    id: str
+    goal: str
+    status: str
+    result: Optional[dict] = None
+    errors: Optional[dict] = None
+    created_at: datetime
+    expires_at: datetime
+
+
 # ===== Finding & Report =====
 
 FINDING_CATEGORIES = {
