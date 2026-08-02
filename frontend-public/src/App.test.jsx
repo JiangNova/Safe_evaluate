@@ -97,4 +97,20 @@ describe('public evaluation application', () => {
     expect(reportSource).toContain("navigate('/')");
     expect(reportSource).toContain('返回继续评估');
   });
+
+  it('supports creating and recovering an anonymous workspace', () => {
+    const source = readSource('pages/WorkspaceEntryPage.jsx');
+
+    expect(source).toContain('创建长期工作区');
+    expect(source).toContain('使用恢复码进入');
+    expect(source).toContain('RecoverySecretDialog');
+  });
+
+  it('provides reusable standard, template, and scenario libraries', () => {
+    const source = readSource('pages/WorkspaceLibraryPage.jsx');
+
+    for (const label of ['评估标准', '输出模板', '固定场景', '版本记录', '开始评估']) {
+      expect(source).toContain(label);
+    }
+  });
 });

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getJobToken } from './jobSession';
+import { getWorkspaceToken } from './workspaceSession';
 
 const api = axios.create({
   baseURL: '/api/public',
@@ -30,6 +31,75 @@ function jobHeaders(jobId) {
     throw new Error('任务访问凭证已丢失，请重新创建评估');
   }
   return { 'X-Job-Token': token };
+}
+
+function workspaceHeaders(workspaceId) {
+  const token = getWorkspaceToken(workspaceId);
+  if (!token) throw new Error('工作区访问凭证已丢失，请使用恢复码重新进入');
+  return { 'X-Workspace-Token': token };
+}
+
+export function createWorkspace(name) {
+  return api.post('/workspaces', { name });
+}
+
+export function recoverWorkspace(workspaceId, recoverySecret) {
+  return api.post('/workspaces/recover', {
+    workspace_id: workspaceId,
+    recovery_secret: recoverySecret,
+  });
+}
+
+export function getWorkspace(workspaceId) {
+  return api.get(`/workspaces/${workspaceId}`, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function listWorkspaceAssets(workspaceId, assetType) {
+  return api.get(`/workspaces/${workspaceId}/assets`, {
+    headers: workspaceHeaders(workspaceId),
+    params: assetType ? { asset_type: assetType } : {},
+  });
+}
+
+export function createWorkspaceAsset(workspaceId, payload) {
+  return api.post(`/workspaces/${workspaceId}/assets`, payload, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function deleteWorkspaceAsset(workspaceId, assetId) {
+  return api.delete(`/workspaces/${workspaceId}/assets/${assetId}`, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function listAssetVersions(workspaceId, assetId) {
+  return api.get(`/workspaces/${workspaceId}/assets/${assetId}/versions`, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function createAssetTextVersion(workspaceId, assetId, payload) {
+  return api.post(`/workspaces/${workspaceId}/assets/${assetId}/versions/text`, payload, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function createAssetFileVersion(workspaceId, assetId, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post(`/workspaces/${workspaceId}/assets/${assetId}/versions/file`, formData, {
+    headers: { ...workspaceHeaders(workspaceId), 'Content-Type': 'multipart/form-data' },
+    timeout: 300000,
+  });
+}
+
+export function listWorkspaceScenarios(workspaceId) {
+  return api.get(`/workspaces/${workspaceId}/scenarios`, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function createWorkspaceScenario(workspaceId, payload) {
+  return api.post(`/workspaces/${workspaceId}/scenarios`, payload, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function deleteWorkspaceScenario(workspaceId, scenarioId) {
+  return api.delete(`/workspaces/${workspaceId}/scenarios/${scenarioId}`, { headers: workspaceHeaders(workspaceId) });
+}
+
+export function createScenarioJob(workspaceId, scenarioId) {
+  return api.post(`/workspaces/${workspaceId}/scenarios/${scenarioId}/jobs`, null, { headers: workspaceHeaders(workspaceId) });
 }
 
 export function createPublicJob(goal) {
