@@ -42,6 +42,7 @@ from .public_job_routes import router as public_job_router
 from .public_workspaces import init_workspace_db
 from .workspace_assets import init_workspace_asset_db
 from .workspace_routes import router as workspace_router
+from .leadership_routes import router as leadership_router
 
 
 async def _public_job_cleanup_loop() -> None:
@@ -73,6 +74,7 @@ init_workspace_db()
 init_workspace_asset_db()
 app.include_router(public_job_router)
 app.include_router(workspace_router)
+app.include_router(leadership_router)
 
 # CORS
 app.add_middleware(

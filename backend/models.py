@@ -66,6 +66,47 @@ class RegenerateFieldRequest(BaseModel):
     instruction: str = Field(default="", max_length=2000)
 
 
+# ===== Anonymous leadership writing assistant =====
+
+
+class LeadershipProfileRequest(BaseModel):
+    """One browser-local leadership profile supplied with a writing request."""
+
+    name: str = Field(min_length=1, max_length=80)
+    title: str = Field(default="", max_length=120)
+    organization: str = Field(default="", max_length=160)
+    responsibilities: str = Field(default="", max_length=4000)
+    focus_areas: str = Field(default="", max_length=4000)
+    writing_preferences: str = Field(default="", max_length=2000)
+    notes: str = Field(default="", max_length=4000)
+
+
+class LeadershipRevisionRequest(BaseModel):
+    """A stateless revision request; no draft is retained by the server."""
+
+    profile: LeadershipProfileRequest
+    task_type: Literal[
+        "implementation_report",
+        "safety_deployment",
+        "speech",
+        "summary",
+        "notice",
+        "custom",
+    ]
+    requirement: str = Field(min_length=1, max_length=12000)
+    title: str = Field(min_length=1, max_length=500)
+    content_markdown: str = Field(min_length=1, max_length=50000)
+    warnings: list[str] = Field(default_factory=list, max_length=100)
+    revision_instruction: str = Field(min_length=1, max_length=12000)
+
+
+class LeadershipDocxExportRequest(BaseModel):
+    """The browser-provided Markdown that should be rendered as a DOCX file."""
+
+    title: str = Field(min_length=1, max_length=500)
+    content_markdown: str = Field(min_length=1, max_length=50000)
+
+
 # ===== Finding & Report =====
 
 FINDING_CATEGORIES = {

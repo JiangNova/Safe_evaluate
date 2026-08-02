@@ -139,10 +139,10 @@ EOF
 
 ---
 
-## 第七步：构建三个前端并上传
+## 第七步：构建四个前端并上传
 
 在**本地电脑**的项目根目录运行统一脚本。脚本会依次检查并构建官网、
-公开自动安全评估平台和内部定制评判平台：
+公开自动安全评估平台、领导文稿助手和内部定制评判平台：
 
 ```powershell
 cd d:\myself\Safe_evaluate
@@ -154,6 +154,7 @@ powershell -ExecutionPolicy Bypass -File scripts/build-frontends.ps1
 ```powershell
 scp -r website/dist root@你的公网IP:/opt/safe-evaluate/website/
 scp -r frontend-public/dist root@你的公网IP:/opt/safe-evaluate/frontend-public/
+scp -r frontend-leadership/dist root@你的公网IP:/opt/safe-evaluate/frontend-leadership/
 scp -r frontend/dist root@你的公网IP:/opt/safe-evaluate/frontend/
 ```
 
@@ -180,6 +181,7 @@ curl http://localhost:8000/api/health
 
 # 官网：浏览器打开 http://你的公网IP/
 # 公开自动安全评估平台：http://你的公网IP/evaluate
+# 领导文稿助手（仅直达）：http://你的公网IP/leader-assistant/
 # 天心区定制评判平台：http://你的公网IP/evaluate_tianxin
 ```
 
@@ -254,12 +256,12 @@ docker-compose down && docker-compose up -d
 ### 更新代码
 
 ```bash
-# 本地先构建并验证三个前端
+# 本地先构建并验证四个前端
 powershell -ExecutionPolicy Bypass -File scripts/build-frontends.ps1
 
-# 打包代码和三个前端；不包含本地数据、真实 .env 与法规目录
+# 打包代码和四个前端；不包含本地数据、真实 .env 与法规目录
 tar --exclude=backend/data --exclude=.env -czf update.tar.gz \
-  backend/ frontend/dist/ frontend-public/dist/ website/dist/ \
+  backend/ frontend/dist/ frontend-public/dist/ frontend-leadership/dist/ website/dist/ \
   nginx.conf docker-compose.yml
 scp update.tar.gz root@ECS:/opt/safe-evaluate/
 
@@ -274,6 +276,7 @@ docker-compose down && docker-compose up -d --build
 
 - AGULAB 官网：`/`
 - 公开自动安全评估平台：`/evaluate`
+- 领导文稿助手（仅直达）：`/leader-assistant/`
 - 天心区定制评判平台：`/evaluate_tianxin`
 - SafeEvaluate 后端接口：`/api/*`
 

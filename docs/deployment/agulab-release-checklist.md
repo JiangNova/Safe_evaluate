@@ -6,6 +6,7 @@
 
 - 官网：`/`
 - 风险评估平台：`/evaluate`
+- 领导文稿助手：`/leader-assistant/`（仅直达链接，不在官网显示入口）
 - 后端 API：`/api/*`
 - 数据目录：服务器现有 `backend/data/`，不得覆盖
 - 法规目录：服务器现有 `requirement/`，不得覆盖
@@ -20,13 +21,14 @@
 - [ ] 备份当前代码、`nginx.conf`、`docker-compose.yml`。
 - [ ] 备份 `.env`、`backend/data/`、`requirement/`。
 - [ ] 备份当前 `frontend/dist/`；若已有官网，同时备份 `website/dist/`。
-- [ ] 本地双前端构建、单元测试、Nginx 路由测试和浏览器验收全部通过。
+- [ ] 官网、公开评估、领导文稿助手和天心平台的构建/单元测试、Nginx 路由测试和浏览器验收全部通过。
 
 ## 发布后
 
 - [ ] `/` 返回 AGULAB 官网。
 - [ ] `/about` 可直接打开并刷新。
 - [ ] `/evaluate` 未登录时进入 `/login`。
+- [ ] `/leader-assistant/` 可直接打开，官网页面中不出现该入口；创建身份档案并生成一次测试文稿。
 - [ ] 登录后返回原目标路径。
 - [ ] `/history`、`/rules`、`/stats` 可用。
 - [ ] 打开一份真实 `/report/<id>`，报告与图片完整。

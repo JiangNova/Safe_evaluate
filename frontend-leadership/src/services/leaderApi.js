@@ -1,0 +1,69 @@
+import axios from 'axios';
+
+const client = axios.create({
+  baseURL: '/api/leader-assistant',
+  timeout: 300000,
+});
+
+function appendFiles(formData, files = []) {
+  Array.from(files).forEach((file) => formData.append('files', file));
+}
+
+export async function generateDocument({ profile, taskType, requirement, files = [] }) {
+  const formData = new FormData();
+  formData.append('profile', JSON.stringify(profile));
+  formData.append('task_type', taskType);
+  formData.append('requirement', requirement);
+  appendFiles(formData, files);
+
+  const response = await client.post('/generate', formData);
+  return response.data;
+}
+
+export async function reviseDocument({
+  profile,
+  taskType,
+  requirement,
+  title,
+  contentMarkdown,
+  warnings = [],
+  revisionInstruction,
+}) {
+  const response = await client.post('/revise', {
+    profile,
+    task_type: taskType,
+    requirement,
+    title,
+    content_markdown: contentMarkdown,
+    warnings,
+    revision_instruction: revisionInstruction,
+  });
+  return response.data;
+}
+
+function filenameFromDisposition(contentDisposition) {
+  const encodedMatch = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch) return decodeURIComponent(encodedMatch[1]);
+
+  const filenameMatch = contentDisposition?.match(/filename="?([^";]+)"?/i);
+  return filenameMatch?.[1] ?? '领导文稿.docx';
+}
+
+export async function downloadDocument({ title, contentMarkdown }) {
+  const response = await client.post(
+    '/export/docx',
+    { title, content_markdown: contentMarkdown },
+    { responseType: 'blob' },
+  );
+  const blob = new Blob([response.data], {
+    type: response.headers['content-type'] ?? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filenameFromDisposition(response.headers['content-disposition']);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
