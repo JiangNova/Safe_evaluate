@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import RecoverySecretDialog from '../components/RecoverySecretDialog';
 import { createWorkspace, recoverWorkspace } from '../services/api';
 import { saveWorkspaceSession } from '../services/workspaceSession';
@@ -47,7 +47,7 @@ export default function WorkspaceEntryPage() {
         <p className={styles.eyebrow}>REUSABLE WORKSPACE</p>
         <h1>把常用标准和模板，留给下一次评估</h1>
         <p>无需注册账号。创建一个可恢复的长期工作区，集中保存评估标准、输出模板和固定业务场景。</p>
-        <a href="/">只做一次临时评估 →</a>
+        <Link to="/">只做一次临时评估 →</Link>
       </section>
       <section className={styles.entryCard}>
         <div className={styles.segmented}>

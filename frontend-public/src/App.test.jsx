@@ -106,6 +106,16 @@ describe('public evaluation application', () => {
     expect(source).toContain('RecoverySecretDialog');
   });
 
+  it('keeps workspace and temporary-evaluation navigation within the public app basename', () => {
+    const entrySource = readSource('pages/WorkspaceEntryPage.jsx');
+    const wizardSource = readSource('pages/JobWizardPage.jsx');
+
+    expect(entrySource).toContain('<Link to="/">');
+    expect(entrySource).not.toContain('<a href="/">只做一次临时评估');
+    expect(wizardSource).toContain('<Link className={styles.workspaceHint} to="/workspace">');
+    expect(wizardSource).not.toContain('href="/workspace"');
+  });
+
   it('provides reusable standard, template, and scenario libraries', () => {
     const source = readSource('pages/WorkspaceLibraryPage.jsx');
 
