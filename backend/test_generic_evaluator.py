@@ -7,6 +7,7 @@ from backend.generic_evaluator import (
     GenericResultError,
     build_evaluation_messages,
     evaluate_generic,
+    infer_template_fields,
     map_template,
     parse_generic_result,
 )
@@ -128,6 +129,90 @@ class GenericEvaluatorTests(unittest.IsolatedAsyncioTestCase):
                 fields,
                 completion=fake_completion,
             )
+
+    async def test_inferred_chinese_keys_become_safe_internal_keys(self):
+        async def fake_completion(messages):
+            return json.dumps(
+                {
+                    "fields": [
+                        {
+                            "key": "编号",
+                            "label": "编号",
+                            "field_type": "text",
+                            "required": True,
+                            "repeating": False,
+                            "confidence": 0.9,
+                            "locator": {
+                                "kind": "docx_inferred",
+                                "anchor": "编号：",
+                            },
+                        },
+                        {
+                            "key": "检查结果",
+                            "label": "检查结果",
+                            "field_type": "multiline",
+                            "required": False,
+                            "repeating": False,
+                            "confidence": 0.8,
+                            "locator": {
+                                "kind": "docx_inferred",
+                                "anchor": "检查结果",
+                            },
+                        },
+                    ]
+                },
+                ensure_ascii=False,
+            )
+
+        fields = await infer_template_fields(
+            "docx", "编号：\n检查结果", [], completion=fake_completion
+        )
+
+        self.assertEqual([field.key for field in fields], ["field_001", "field_002"])
+        self.assertEqual([field.label for field in fields], ["编号", "检查结果"])
+
+    async def test_inference_keeps_valid_fields_when_one_field_is_invalid(self):
+        async def fake_completion(messages):
+            return json.dumps(
+                {
+                    "fields": [
+                        {
+                            "key": "valid_field",
+                            "label": "有效字段",
+                            "field_type": "text",
+                            "required": False,
+                            "repeating": False,
+                            "confidence": 0.9,
+                            "locator": {"kind": "docx_inferred", "anchor": "有效字段"},
+                        },
+                        {
+                            "key": "bad_field",
+                            "label": "异常字段",
+                            "field_type": "unsupported",
+                            "required": False,
+                            "repeating": False,
+                            "confidence": 0.5,
+                            "locator": {"kind": "docx_inferred", "anchor": "异常字段"},
+                        },
+                    ]
+                },
+                ensure_ascii=False,
+            )
+
+        fields = await infer_template_fields(
+            "docx", "有效字段\n异常字段", [], completion=fake_completion
+        )
+
+        self.assertEqual([field.key for field in fields], ["valid_field"])
+
+    def test_prompts_require_chinese_human_readable_output(self):
+        evaluation_messages = build_evaluation_messages(
+            "检查消防安全是否符合",
+            self.materials,
+            self.bases,
+            [],
+        )
+        self.assertIn("Simplified Chinese", evaluation_messages[0]["content"])
 
 
 if __name__ == "__main__":
