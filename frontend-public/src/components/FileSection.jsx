@@ -1,5 +1,16 @@
-import { useId } from 'react';
+import { useId, useRef, useState } from 'react';
 import styles from '../App.module.css';
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+
+function acceptedExtensions(accept) {
+  return new Set(
+    String(accept || '')
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter((item) => item.startsWith('.')),
+  );
+}
 
 export default function FileSection({
   kind,
@@ -10,9 +21,26 @@ export default function FileSection({
   onChange,
 }) {
   const inputId = useId();
+  const inputRef = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const [fileError, setFileError] = useState('');
 
-  function addFiles(event) {
-    const selected = Array.from(event.target.files || []);
+  function mergeFiles(selectedFiles) {
+    const selected = Array.from(selectedFiles || []);
+    const allowed = acceptedExtensions(accept);
+    const invalidType = selected.find((file) => {
+      const extension = `.${file.name.split('.').pop()?.toLowerCase()}`;
+      return allowed.size > 0 && !allowed.has(extension);
+    });
+    if (invalidType) {
+      setFileError(`不支持“${invalidType.name}”的文件格式`);
+      return;
+    }
+    const oversized = selected.find((file) => file.size > MAX_FILE_SIZE);
+    if (oversized) {
+      setFileError(`“${oversized.name}”超过 50MB，请压缩后重试`);
+      return;
+    }
     const known = new Set(files.map((file) => `${file.name}:${file.size}:${file.lastModified}`));
     onChange([
       ...files,
@@ -20,7 +48,22 @@ export default function FileSection({
         (file) => !known.has(`${file.name}:${file.size}:${file.lastModified}`),
       ),
     ]);
+    setFileError('');
+  }
+
+  function addFiles(event) {
+    mergeFiles(event.target.files);
     event.target.value = '';
+  }
+
+  function dropFiles(event) {
+    event.preventDefault();
+    setDragging(false);
+    mergeFiles(event.dataTransfer.files);
+  }
+
+  function openFilePicker() {
+    inputRef.current?.click();
   }
 
   function removeFile(index) {
@@ -37,17 +80,32 @@ export default function FileSection({
         <span>{files.length} 个文件</span>
       </div>
 
-      <label className={styles.dropzone} htmlFor={inputId}>
+      <div
+        className={`${styles.dropzone} ${dragging ? styles.dropzoneDragging : ''}`}
+        onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false);
+        }}
+        onDrop={dropFiles}
+      >
         <input
+          ref={inputRef}
           id={inputId}
           type="file"
           accept={accept}
           multiple
           onChange={addFiles}
         />
-        <strong>选择或拖入文件</strong>
-        <small>单个文件不超过 50MB</small>
-      </label>
+        <strong>{dragging ? '松开即可添加文件' : '将文件拖到这里'}</strong>
+        <span>或者</span>
+        <button type="button" className={styles.filePickerButton} onClick={openFilePicker}>
+          选择文件
+        </button>
+        <small>支持多选，单个文件不超过 50MB</small>
+      </div>
+
+      {fileError && <div className={styles.fileError}>{fileError}</div>}
 
       {files.length > 0 && (
         <ul className={styles.fileList}>
@@ -67,4 +125,3 @@ export default function FileSection({
     </section>
   );
 }
-

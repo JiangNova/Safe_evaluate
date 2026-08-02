@@ -53,6 +53,15 @@ describe('public evaluation application', () => {
     expect(wizardSource).toContain('输出模板');
   });
 
+  it('supports both an explicit file picker and drag-and-drop uploads', () => {
+    const source = readSource('components/FileSection.jsx');
+
+    expect(source).toContain('inputRef.current?.click()');
+    expect(source).toContain('onDrop={dropFiles}');
+    expect(source).toContain('event.dataTransfer.files');
+    expect(source).toContain('选择文件');
+  });
+
   it('requires explicit field confirmation before evaluation', () => {
     const source = [
       readSource('pages/TemplateConfirmPage.jsx'),
