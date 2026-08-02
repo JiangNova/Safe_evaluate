@@ -34,7 +34,7 @@ COPY backend/ ./backend/
 COPY requirement/ ./requirement/
 
 # 创建数据目录
-RUN mkdir -p /app/backend/data/reports /app/backend/data/images /app/backend/data/public_jobs
+RUN mkdir -p /app/backend/data/reports /app/backend/data/images /app/backend/data/public_jobs /app/backend/data/public_workspaces
 
 EXPOSE 8000
 

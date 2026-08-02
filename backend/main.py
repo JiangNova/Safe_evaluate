@@ -34,7 +34,10 @@ from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
 from .public_jobs import init_public_job_db
-from .public_job_cleanup import cleanup_expired_public_jobs
+from .public_job_cleanup import (
+    cleanup_expired_public_jobs,
+    cleanup_expired_public_workspaces,
+)
 from .public_job_routes import router as public_job_router
 from .public_workspaces import init_workspace_db
 from .workspace_assets import init_workspace_asset_db
@@ -45,11 +48,13 @@ async def _public_job_cleanup_loop() -> None:
     while True:
         await asyncio.sleep(60 * 60)
         await asyncio.to_thread(cleanup_expired_public_jobs)
+        await asyncio.to_thread(cleanup_expired_public_workspaces)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await asyncio.to_thread(cleanup_expired_public_jobs)
+    await asyncio.to_thread(cleanup_expired_public_workspaces)
     cleanup_task = asyncio.create_task(_public_job_cleanup_loop())
     try:
         yield

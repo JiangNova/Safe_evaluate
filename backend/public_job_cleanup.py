@@ -7,8 +7,8 @@ import os
 import shutil
 from datetime import datetime
 
-from . import public_jobs
-from .config import PUBLIC_JOB_STORAGE_DIR
+from . import public_jobs, public_workspaces
+from .config import PUBLIC_JOB_STORAGE_DIR, PUBLIC_WORKSPACE_STORAGE_DIR
 
 
 LOGGER = logging.getLogger(__name__)
@@ -47,3 +47,27 @@ def delete_public_job(job_id: str) -> None:
     if os.path.isdir(directory):
         shutil.rmtree(directory)
     public_jobs.delete_jobs([job_id])
+
+
+def _workspace_directory(workspace_id: str) -> str:
+    root = os.path.abspath(PUBLIC_WORKSPACE_STORAGE_DIR)
+    target = os.path.abspath(os.path.join(root, workspace_id))
+    if target == root or os.path.commonpath([root, target]) != root:
+        raise ValueError("public workspace storage path escaped its root")
+    return target
+
+
+def cleanup_expired_public_workspaces(now: datetime | None = None) -> list[str]:
+    """Apply the grace transition and physically remove workspaces after grace."""
+    public_workspaces.mark_inactive_workspaces(now)
+    removed: list[str] = []
+    for workspace_id in public_workspaces.list_expired_workspace_ids(now):
+        try:
+            directory = _workspace_directory(workspace_id)
+            if os.path.isdir(directory):
+                shutil.rmtree(directory)
+            public_workspaces.delete_workspace(workspace_id)
+            removed.append(workspace_id)
+        except (OSError, ValueError):
+            LOGGER.exception("Could not clean expired public workspace %s", workspace_id)
+    return removed
