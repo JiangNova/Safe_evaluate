@@ -8,7 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Header, HTTPException, Query, UploadFile
 
-from . import public_workspaces, workspace_assets
+from . import public_jobs, public_workspaces, workspace_assets
 from .config import MAX_FILE_SIZE
 from .workspace_assets import WorkspaceAssetSource
 from .workspace_models import (
@@ -20,6 +20,7 @@ from .workspace_models import (
     WorkspaceCreateRequest,
     WorkspaceRecoverRequest,
 )
+from .template_parser import parse_template
 
 
 router = APIRouter(prefix="/api/public/workspaces", tags=["public-workspaces"])
@@ -92,6 +93,69 @@ def _scenario_payload(scenario: dict) -> dict:
         "created_at": scenario["created_at"],
         "updated_at": scenario["updated_at"],
     }
+
+
+def _resource_snapshot(version: dict) -> dict:
+    """Freeze all data needed by a short-lived job at creation time."""
+    return {
+        "asset_id": version["asset_id"],
+        "asset_name": version["asset_name"],
+        "asset_type": version["asset_type"],
+        "version_number": version["version_number"],
+        "source_kind": version["source_kind"],
+        "source_text": version.get("source_text"),
+        "source_file_path": version.get("source_file_path"),
+        "original_name": version.get("original_name"),
+        "mime_type": version.get("mime_type"),
+        "size": version["size"],
+        "parsed_content": version.get("parsed_content_json"),
+        "compiled_template": version.get("compiled_template_json"),
+    }
+
+
+def _register_file_resource(job_id: str, version: dict) -> None:
+    """Register a read-only reference to a long-lived workspace source file."""
+    source_path = version.get("source_file_path")
+    if not source_path or not os.path.isfile(source_path):
+        raise ValueError("工作区资源文件不存在")
+    kind = version["asset_type"]
+    record = public_jobs.add_file(
+        job_id,
+        kind,
+        {
+            "safe_name": os.path.basename(source_path),
+            "original_name": version.get("original_name") or os.path.basename(source_path),
+            "mime_type": version.get("mime_type") or "application/octet-stream",
+            "size": version["size"],
+            "storage_path": source_path,
+            "parse_status": "workspace_snapshot",
+            "parse_metadata_json": {"asset_version_id": version["id"]},
+        },
+    )
+    if kind == "template":
+        compiled = version.get("compiled_template_json") or {}
+        if compiled.get("fields") is not None:
+            public_jobs.add_template(
+                job_id,
+                record["id"],
+                compiled.get("source_format") or os.path.splitext(source_path)[1].lstrip("."),
+                compiled["fields"],
+                preview_metadata=compiled.get("preview_metadata") or {},
+                confirmation_status="confirmed",
+            )
+        else:
+            parsed = parse_template(record)
+            public_jobs.add_template(
+                job_id,
+                record["id"],
+                parsed.source_format,
+                [field.to_dict() for field in parsed.fields],
+                preview_metadata={
+                    **parsed.preview_metadata,
+                    "warnings": parsed.warnings,
+                    "requires_confirmation": parsed.requires_confirmation,
+                },
+            )
 
 
 def _authorize(workspace_id: str, token: str | None) -> dict:
@@ -314,6 +378,49 @@ async def create_scenario(
     except ValueError as exc:
         raise _api_error(400, "invalid_scenario", str(exc), stage="workspace_scenario")
     return _scenario_payload(scenario)
+
+
+@router.post("/{workspace_id}/scenarios/{scenario_id}/jobs", status_code=201)
+async def create_job_from_scenario(
+    workspace_id: str,
+    scenario_id: int,
+    x_workspace_token: Annotated[str | None, Header()] = None,
+):
+    _authorize(workspace_id, x_workspace_token)
+    scenario = workspace_assets.get_scenario(scenario_id, workspace_id)
+    if scenario is None or scenario.get("deleted_at") is not None:
+        raise _api_error(404, "scenario_not_found", "场景不存在", stage="workspace_scenario")
+    job, token = public_jobs.create_job(
+        scenario["goal_template"], workspace_id=workspace_id
+    )
+    try:
+        selected = [
+            ("basis", version_id)
+            for version_id in (scenario.get("basis_version_ids_json") or [])
+        ] + [
+            ("template", version_id)
+            for version_id in (scenario.get("template_version_ids_json") or [])
+        ]
+        for resource_kind, version_id in selected:
+            version = workspace_assets.get_asset_version(version_id, workspace_id)
+            if version is None or version["asset_type"] != resource_kind:
+                raise PermissionError("场景引用的资源版本无效")
+            public_jobs.bind_job_resource(
+                job["id"], resource_kind, version_id, _resource_snapshot(version)
+            )
+            if version["source_kind"] == "file":
+                _register_file_resource(job["id"], version)
+    except Exception as exc:
+        public_jobs.delete_jobs([job["id"]])
+        if isinstance(exc, PermissionError):
+            raise _api_error(403, "foreign_asset_version", str(exc), stage="job_create")
+        raise _api_error(400, "resource_snapshot_failed", str(exc), stage="job_create")
+    return {
+        "job_id": job["id"],
+        "access_token": token,
+        "status": job["status"],
+        "expires_at": job["expires_at"],
+    }
 
 
 @router.put("/{workspace_id}/scenarios/{scenario_id}")

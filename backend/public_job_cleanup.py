@@ -39,3 +39,11 @@ def cleanup_expired_public_jobs(now: datetime | None = None) -> list[str]:
         except (OSError, ValueError):
             LOGGER.exception("Could not clean expired public job %s", job_id)
     return removed
+
+
+def delete_public_job(job_id: str) -> None:
+    """Remove one authorized job's private artifacts and persistent records."""
+    directory = _job_directory(job_id)
+    if os.path.isdir(directory):
+        shutil.rmtree(directory)
+    public_jobs.delete_jobs([job_id])

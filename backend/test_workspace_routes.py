@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from backend import public_workspaces, workspace_assets
+from backend import public_files, public_jobs, public_workspaces, workspace_assets
 from backend.main import app
 
 
@@ -24,13 +24,28 @@ class WorkspaceRouteTests(unittest.TestCase):
             "PUBLIC_WORKSPACE_STORAGE_DIR",
             os.path.join(self.temp_dir.name, "storage"),
         )
+        self.job_db_patch = patch.object(
+            public_jobs,
+            "DB_PATH",
+            os.path.join(self.temp_dir.name, "jobs.db"),
+        )
+        self.job_storage_patch = patch.object(
+            public_files,
+            "PUBLIC_JOB_STORAGE_DIR",
+            os.path.join(self.temp_dir.name, "jobs"),
+        )
         self.db_patch.start()
         self.storage_patch.start()
+        self.job_db_patch.start()
+        self.job_storage_patch.start()
         public_workspaces.init_workspace_db()
         workspace_assets.init_workspace_asset_db()
+        public_jobs.init_public_job_db()
         self.client = TestClient(app)
 
     def tearDown(self):
+        self.job_storage_patch.stop()
+        self.job_db_patch.stop()
         self.storage_patch.stop()
         self.db_patch.stop()
         self.temp_dir.cleanup()
@@ -172,6 +187,39 @@ class WorkspaceRouteTests(unittest.TestCase):
         )
         self.assertEqual(rejected.status_code, 403, rejected.text)
         self.assertEqual(rejected.json()["detail"]["code"], "foreign_asset_version")
+
+    def test_starting_a_scenario_creates_an_immutable_job_snapshot(self):
+        workspace_id, token = self.create_workspace()
+        basis = self.create_asset(workspace_id, token, "basis", "处罚制度")
+        version = self.create_text_version(
+            workspace_id, token, basis["id"], "迟到三次给予书面警告。"
+        )
+        scenario_response = self.client.post(
+            f"/api/public/workspaces/{workspace_id}/scenarios",
+            headers=self.headers(token),
+            json={
+                "name": "员工违纪处罚",
+                "goal_template": "根据制度给出处罚建议",
+                "basis_version_ids": [version["id"]],
+                "template_version_ids": [],
+            },
+        )
+        scenario_id = scenario_response.json()["id"]
+
+        response = self.client.post(
+            f"/api/public/workspaces/{workspace_id}/scenarios/{scenario_id}/jobs",
+            headers=self.headers(token),
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        payload = response.json()
+        self.assertIn("access_token", payload)
+        resources = public_jobs.list_job_resources(payload["job_id"])
+        self.assertEqual(resources[0]["snapshot_json"]["source_text"], "迟到三次给予书面警告。")
+        workspace_assets.delete_asset(basis["id"], workspace_id)
+        self.assertEqual(
+            public_jobs.list_job_resources(payload["job_id"])[0]["snapshot_json"]["source_text"],
+            "迟到三次给予书面警告。",
+        )
 
 
 if __name__ == "__main__":

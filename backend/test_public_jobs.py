@@ -110,6 +110,24 @@ class PublicJobStoreTests(unittest.TestCase):
         self.assertIsNone(public_jobs.get_job(expired["id"]))
         self.assertIsNotNone(public_jobs.get_job(active["id"]))
 
+    def test_job_resource_snapshot_survives_source_changes(self):
+        job, _ = public_jobs.create_job("Assess", workspace_id="workspace-1")
+        binding = public_jobs.bind_job_resource(
+            job["id"],
+            "basis",
+            42,
+            {"source_kind": "text_freeform", "source_text": "制度第一版"},
+        )
+
+        original_snapshot = {"source_kind": "text_freeform", "source_text": "已修改"}
+        self.assertEqual(binding["asset_version_id"], 42)
+        self.assertEqual(
+            public_jobs.list_job_resources(job["id"])[0]["snapshot_json"]["source_text"],
+            "制度第一版",
+        )
+        self.assertEqual(original_snapshot["source_text"], "已修改")
+        self.assertEqual(public_jobs.get_job(job["id"])["workspace_id"], "workspace-1")
+
 
 if __name__ == "__main__":
     unittest.main()

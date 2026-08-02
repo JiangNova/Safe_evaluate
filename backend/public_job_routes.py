@@ -25,6 +25,7 @@ from fastapi.responses import FileResponse
 
 from . import public_files, public_jobs
 from .config import PUBLIC_JOB_CREATE_RATE, PUBLIC_JOB_MAX_CONCURRENCY
+from .public_job_cleanup import delete_public_job
 from .document_renderer import (
     DocumentRenderError,
     build_artifact_zip,
@@ -162,6 +163,18 @@ def _document_payload(document: dict) -> dict:
     }
 
 
+def _resource_payload(resource: dict) -> dict:
+    snapshot = dict(resource.get("snapshot_json") or {})
+    snapshot.pop("source_file_path", None)
+    return {
+        "id": resource["id"],
+        "resource_kind": resource["resource_kind"],
+        "asset_version_id": resource["asset_version_id"],
+        "snapshot": snapshot,
+        "created_at": resource["created_at"],
+    }
+
+
 def _job_payload(job: dict) -> dict:
     return {
         "id": job["id"],
@@ -172,6 +185,11 @@ def _job_payload(job: dict) -> dict:
         "created_at": job["created_at"],
         "updated_at": job["updated_at"],
         "expires_at": job["expires_at"],
+        "workspace_id": job.get("workspace_id"),
+        "resources": [
+            _resource_payload(item)
+            for item in public_jobs.list_job_resources(job["id"])
+        ],
         "files": [_file_payload(item) for item in public_jobs.list_files(job["id"])],
         "templates": [
             _template_payload(item) for item in public_jobs.list_templates(job["id"])
@@ -204,6 +222,24 @@ async def get_public_job(
 ):
     job = _authorize(job_id, x_job_token)
     return _job_payload(job)
+
+
+@router.delete("/{job_id}", status_code=204)
+async def delete_public_job_route(
+    job_id: str,
+    x_job_token: Annotated[str | None, Header()] = None,
+):
+    _authorize(job_id, x_job_token)
+    try:
+        delete_public_job(job_id)
+    except OSError as exc:
+        raise _api_error(
+            500,
+            "job_cleanup_failed",
+            "任务文件清理失败，请稍后重试",
+            stage="delete",
+            retryable=True,
+        ) from exc
 
 
 async def _validate_uploads(kind: str, files: list[UploadFile]):

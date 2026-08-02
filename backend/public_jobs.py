@@ -43,6 +43,7 @@ def init_public_job_db() -> None:
             CREATE TABLE IF NOT EXISTS public_jobs (
                 id                  TEXT PRIMARY KEY,
                 access_token_hash   TEXT NOT NULL,
+                workspace_id        TEXT,
                 goal                TEXT NOT NULL,
                 status              TEXT NOT NULL DEFAULT 'draft',
                 result_json         TEXT,
@@ -54,6 +55,16 @@ def init_public_job_db() -> None:
 
             CREATE INDEX IF NOT EXISTS idx_public_jobs_expires_at
                 ON public_jobs(expires_at);
+
+            CREATE TABLE IF NOT EXISTS public_job_resources (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id              TEXT NOT NULL REFERENCES public_jobs(id) ON DELETE CASCADE,
+                resource_kind       TEXT NOT NULL,
+                asset_version_id    INTEGER NOT NULL,
+                snapshot_json       TEXT NOT NULL,
+                created_at          TEXT NOT NULL,
+                UNIQUE(job_id, resource_kind, asset_version_id)
+            );
 
             CREATE TABLE IF NOT EXISTS public_job_files (
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,6 +121,11 @@ def init_public_job_db() -> None:
             );
             """
         )
+        columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(public_jobs)")
+        }
+        if "workspace_id" not in columns:
+            conn.execute("ALTER TABLE public_jobs ADD COLUMN workspace_id TEXT")
 
 
 def _utc_now() -> datetime:
@@ -154,7 +170,7 @@ def get_job(job_id: str) -> dict | None:
     return _decode_row(row)
 
 
-def create_job(goal: str) -> tuple[dict, str]:
+def create_job(goal: str, workspace_id: str | None = None) -> tuple[dict, str]:
     cleaned = goal.strip()
     if not cleaned:
         raise ValueError("evaluation goal is required")
@@ -169,13 +185,14 @@ def create_job(goal: str) -> tuple[dict, str]:
         conn.execute(
             """
             INSERT INTO public_jobs (
-                id, access_token_hash, goal, status,
+                id, access_token_hash, workspace_id, goal, status,
                 created_at, updated_at, expires_at
-            ) VALUES (?, ?, ?, 'draft', ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, 'draft', ?, ?, ?)
             """,
             (
                 job_id,
                 token_hash,
+                workspace_id,
                 cleaned,
                 _iso(now),
                 _iso(now),
@@ -187,6 +204,56 @@ def create_job(goal: str) -> tuple[dict, str]:
     if job is None:  # pragma: no cover - guards impossible DB inconsistency
         raise RuntimeError("created public job could not be loaded")
     return job, raw_token
+
+
+def bind_job_resource(
+    job_id: str,
+    resource_kind: str,
+    asset_version_id: int,
+    snapshot: dict,
+) -> dict:
+    """Attach an immutable serialized workspace resource snapshot to a job."""
+    if resource_kind not in {"basis", "template"}:
+        raise ValueError("job resource kind must be basis or template")
+    if get_job(job_id) is None:
+        raise LookupError("public job not found")
+    with _get_db() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO public_job_resources (
+                job_id, resource_kind, asset_version_id, snapshot_json, created_at
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                job_id,
+                resource_kind,
+                int(asset_version_id),
+                _encode_json(snapshot),
+                _iso(_utc_now()),
+            ),
+        )
+        row = conn.execute(
+            "SELECT * FROM public_job_resources WHERE id = ?",
+            (int(cursor.lastrowid),),
+        ).fetchone()
+    decoded = _decode_row(row)
+    if decoded is None:  # pragma: no cover
+        raise RuntimeError("created job resource could not be loaded")
+    return decoded
+
+
+def list_job_resources(job_id: str, resource_kind: str | None = None) -> list[dict]:
+    query = "SELECT * FROM public_job_resources WHERE job_id = ?"
+    values: list[Any] = [job_id]
+    if resource_kind is not None:
+        if resource_kind not in {"basis", "template"}:
+            raise ValueError("job resource kind must be basis or template")
+        query += " AND resource_kind = ?"
+        values.append(resource_kind)
+    query += " ORDER BY id"
+    with _get_db() as conn:
+        rows = conn.execute(query, values).fetchall()
+    return [_decode_row(row) for row in rows]
 
 
 def authorize_job(job_id: str, token: str) -> dict:
