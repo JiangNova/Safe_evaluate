@@ -53,6 +53,28 @@ describe('public evaluation application', () => {
     expect(wizardSource).toContain('输出模板');
   });
 
+  it('requires explicit field confirmation before evaluation', () => {
+    const source = [
+      readSource('pages/TemplateConfirmPage.jsx'),
+      readSource('components/TemplateFieldEditor.jsx'),
+    ].join('\n');
+
+    expect(source).toContain('确认字段并开始评估');
+    expect(source).toContain('confidence');
+    expect(source).toContain('confirmTemplateFields');
+  });
+
+  it('supports field edit, regeneration, finalization, and archive download', () => {
+    const source = [
+      readSource('pages/JobWorkspacePage.jsx'),
+      readSource('components/DocumentFieldEditor.jsx'),
+    ].join('\n');
+
+    for (const text of ['重新生成此字段', '恢复 AI 初稿', '确认定稿', '下载全部文书']) {
+      expect(source).toContain(text);
+    }
+  });
+
   it.each(['天心区', '公安分局', '派出所', '历史记录', '统计分析', '规则管理'])(
     'does not expose restricted public copy: %s',
     (restrictedText) => {

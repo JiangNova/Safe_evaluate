@@ -85,6 +85,32 @@ class DocumentRendererTests(unittest.TestCase):
 
         self.assertIn("missing_required_field", [item.code for item in result.warnings])
 
+    def test_render_docx_fills_inferred_field_after_anchor(self):
+        template_path = os.path.join(self.temp_dir.name, "inferred-template.docx")
+        output_path = os.path.join(self.temp_dir.name, "inferred-output.docx")
+        document = Document()
+        document.add_paragraph("Unit name: ")
+        document.save(template_path)
+        field = TemplateField(
+            key="unit_name",
+            label="Unit name",
+            field_type="text",
+            required=True,
+            repeating=False,
+            confidence=0.82,
+            locator={"kind": "docx_inferred", "anchor": "Unit name: "},
+        )
+
+        result = document_renderer.render_docx(
+            template_path,
+            [field],
+            {"unit_name": {"value": "Example Company"}},
+            output_path,
+        )
+
+        self.assertIn("Unit name: Example Company", all_docx_text(result.path))
+        self.assertNotIn("anchor_not_found", [item.code for item in result.warnings])
+
     @unittest.skipUnless(HAS_PDF_DEPS, "PDF runtime dependencies are not installed locally")
     def test_render_pdf_preserves_page_count_and_reports_overflow(self):
         from reportlab.pdfgen import canvas

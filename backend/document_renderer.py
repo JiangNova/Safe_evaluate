@@ -90,6 +90,33 @@ def _replace_table(table, replacements: dict[str, str]) -> set[str]:
     return used
 
 
+def _fill_inferred_paragraph(paragraph, anchor: str, value: str) -> bool:
+    """Insert an inferred value immediately after its confirmed anchor text."""
+    full_text = "".join(run.text for run in paragraph.runs)
+    if not anchor or anchor not in full_text:
+        return False
+    rendered = full_text.replace(anchor, f"{anchor}{value}", 1)
+    if paragraph.runs:
+        paragraph.runs[0].text = rendered
+        for run in paragraph.runs[1:]:
+            run.text = ""
+    else:  # pragma: no cover
+        paragraph.add_run(rendered)
+    return True
+
+
+def _fill_inferred_table(table, anchor: str, value: str) -> bool:
+    for row in table.rows:
+        for cell in row.cells:
+            for paragraph in cell.paragraphs:
+                if _fill_inferred_paragraph(paragraph, anchor, value):
+                    return True
+            for nested in cell.tables:
+                if _fill_inferred_table(nested, anchor, value):
+                    return True
+    return False
+
+
 def render_docx(
     template_path: str,
     fields: list[TemplateField],
@@ -134,6 +161,43 @@ def render_docx(
                 used.update(_replace_paragraph(paragraph, replacements))
             for table in part.tables:
                 used.update(_replace_table(table, replacements))
+
+    for field in fields:
+        if field.locator.get("kind") != "docx_inferred":
+            continue
+        anchor = str(field.locator.get("anchor", ""))
+        value = replacements[field.key]
+        found = any(
+            _fill_inferred_paragraph(paragraph, anchor, value)
+            for paragraph in document.paragraphs
+        )
+        if not found:
+            found = any(
+                _fill_inferred_table(table, anchor, value)
+                for table in document.tables
+            )
+        if not found:
+            for section in document.sections:
+                for part in (section.header, section.footer):
+                    if any(
+                        _fill_inferred_paragraph(paragraph, anchor, value)
+                        for paragraph in part.paragraphs
+                    ) or any(
+                        _fill_inferred_table(table, anchor, value)
+                        for table in part.tables
+                    ):
+                        found = True
+                        break
+                if found:
+                    break
+        if not found:
+            warnings.append(
+                RenderWarning(
+                    "anchor_not_found",
+                    f"The confirmed anchor for field '{field.label}' was not found.",
+                    field.key,
+                )
+            )
 
     for field in fields:
         if field.locator.get("kind") == "docx_placeholder" and field.key not in used:
