@@ -391,3 +391,12 @@ def parse_template(
     if extension == ".pdf":
         return _parse_pdf(file_record["storage_path"], infer_fields)
     raise TemplateFieldError(f"不支持的模板格式: {extension}")
+
+
+def compile_parse_result(result: TemplateParseResult):
+    """Compatibility bridge from the existing parser to the universal IR."""
+    from .template_ir import compile_legacy_fields
+
+    return compile_legacy_fields(
+        result.source_format, [field.to_dict() for field in result.fields]
+    )
