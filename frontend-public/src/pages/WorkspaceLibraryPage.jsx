@@ -100,7 +100,7 @@ export default function WorkspaceLibraryPage() {
         const text = String(data.get('text') || '').trim();
         if (file?.size) await createAssetFileVersion(workspaceId, created.data.id, file);
         else await createAssetTextVersion(workspaceId, created.data.id, {
-          source_kind: tab === 'template' ? 'text_structured' : 'text_freeform',
+          source_kind: 'text_freeform',
           source_text: text,
         });
       }

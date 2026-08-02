@@ -54,7 +54,10 @@ export default function WorkspaceNewJobPage() {
       return version.data.id;
     }
     const version = await createAssetTextVersion(workspaceId, asset.data.id, {
-      source_kind: kind === 'template' ? 'text_structured' : 'text_freeform',
+      source_kind:
+        kind === 'template' && /^\s*[^：:\n]{1,40}[：:]\s*(?:[_＿]{2,}|\{\{)/m.test(item.text)
+          ? 'text_structured'
+          : 'text_freeform',
       source_text: item.text,
     });
     return version.data.id;
