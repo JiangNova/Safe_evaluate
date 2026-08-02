@@ -193,6 +193,34 @@ def store_upload(job_id: str, upload: ValidatedUpload) -> dict:
         raise
 
 
+def register_generated_artifact(
+    job_id: str,
+    path: str,
+    original_name: str,
+    mime_type: str,
+) -> dict:
+    """Register an already-rendered artifact inside the job storage boundary."""
+    absolute_path = os.path.abspath(path)
+    job_dir = os.path.abspath(os.path.join(PUBLIC_JOB_STORAGE_DIR, job_id))
+    if os.path.commonpath([job_dir, absolute_path]) != job_dir:
+        raise UploadValidationError("生成文件不在任务存储目录内")
+    if not os.path.isfile(absolute_path):
+        raise UploadValidationError("生成文件不存在")
+    return public_jobs.add_file(
+        job_id,
+        "generated",
+        {
+            "safe_name": os.path.basename(absolute_path),
+            "original_name": _clean_original_name(original_name),
+            "mime_type": mime_type,
+            "size": os.path.getsize(absolute_path),
+            "storage_path": absolute_path,
+            "parse_status": "generated",
+            "parse_metadata_json": None,
+        },
+    )
+
+
 def _read_text(path: str) -> tuple[str, list[str]]:
     data = Path(path).read_bytes()
     for encoding in ("utf-8-sig", "gb18030"):

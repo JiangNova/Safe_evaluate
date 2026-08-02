@@ -43,6 +43,23 @@ class PublicJobStatusResponse(BaseModel):
     expires_at: datetime
 
 
+class PublicJobCreateRequest(BaseModel):
+    goal: str = Field(min_length=1, max_length=4000)
+
+
+class TemplateFieldsUpdate(BaseModel):
+    fields: list[dict]
+    preview_metadata: Optional[dict] = None
+
+
+class DocumentFieldsUpdate(BaseModel):
+    fields: dict
+
+
+class RegenerateFieldRequest(BaseModel):
+    instruction: str = Field(default="", max_length=2000)
+
+
 # ===== Finding & Report =====
 
 FINDING_CATEGORIES = {

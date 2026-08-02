@@ -20,7 +20,7 @@ from .config import (
 )
 from .evaluator import _call_api_with_retry
 from .public_files import ParsedSource
-from .template_parser import TemplateField
+from .template_parser import TemplateField, validate_field_definitions
 
 
 CompletionCallable = Callable[[list[dict]], Awaitable[str]]
@@ -351,3 +351,45 @@ async def regenerate_field(
         return FieldValue.model_validate(payload)
     except ValidationError as exc:
         raise GenericResultError(f"重生成字段结构无效: {exc}") from exc
+
+
+async def infer_template_fields(
+    source_format: str,
+    text: str,
+    layout: list[dict],
+    *,
+    completion: CompletionCallable | None = None,
+) -> list[TemplateField]:
+    """Infer candidate fields for a template that has no explicit placeholders."""
+    messages = [
+        {
+            "role": "system",
+            "content": """Identify only areas intended to be filled in this output template.
+Return {"fields":[...]} JSON. Each field requires key, label, field_type
+(text|multiline|date|boolean|list), required, repeating, confidence, and locator.
+DOCX locator is {"kind":"docx_inferred","anchor":"visible label"}.
+PDF locator is {"kind":"pdf_rect","page":0,"rect":[x0,y0,x1,y1]} using the supplied layout.
+Do not invent fields not visibly implied by the template.""",
+        },
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "source_format": source_format,
+                    "template_text": text[:20000],
+                    "layout": layout[:30],
+                },
+                ensure_ascii=False,
+            ),
+        },
+    ]
+    payload = _extract_json_payload(
+        await (completion or _configured_completion)(messages)
+    )
+    fields = payload.get("fields")
+    if not isinstance(fields, list):
+        raise GenericResultError("模板字段识别结果缺少 fields 数组")
+    try:
+        return validate_field_definitions(source_format, fields)
+    except ValueError as exc:
+        raise GenericResultError(f"模板字段识别结果无效: {exc}") from exc

@@ -52,6 +52,8 @@ PUBLIC_JOB_MAX_TOTAL_SIZE = int(
 )
 LIBREOFFICE_COMMAND = os.getenv("LIBREOFFICE_COMMAND", "soffice")
 TESSERACT_COMMAND = os.getenv("TESSERACT_COMMAND", "tesseract")
+PUBLIC_JOB_CREATE_RATE = int(os.getenv("PUBLIC_JOB_CREATE_RATE", "20"))
+PUBLIC_JOB_MAX_CONCURRENCY = int(os.getenv("PUBLIC_JOB_MAX_CONCURRENCY", "2"))
 
 # Auth
 APP_ENV = os.getenv("APP_ENV", "development").lower()

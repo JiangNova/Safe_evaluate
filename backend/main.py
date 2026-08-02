@@ -31,11 +31,15 @@ from .document_parser import load_all_requirements, build_requirements_context, 
 from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
+from .public_jobs import init_public_job_db
+from .public_job_routes import router as public_job_router
 
 app = FastAPI(title="SafeEvaluate API", version="1.0.0")
 
 # Initialize database (create tables + migrate legacy JSON reports)
 init_db()
+init_public_job_db()
+app.include_router(public_job_router)
 
 # CORS
 app.add_middleware(

@@ -309,24 +309,103 @@ def add_template(
     source_file_id: int,
     source_format: str,
     fields: list[dict],
+    preview_metadata: dict | None = None,
+    confirmation_status: str = "pending",
 ) -> dict:
     with _get_db() as conn:
         cursor = conn.execute(
             """
             INSERT INTO public_job_templates (
-                job_id, source_file_id, source_format, fields_json, created_at
-            ) VALUES (?, ?, ?, ?, ?)
+                job_id, source_file_id, source_format, fields_json,
+                preview_metadata_json, confirmation_status, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 job_id,
                 source_file_id,
                 source_format,
                 _encode_json(fields),
+                _encode_json(preview_metadata),
+                confirmation_status,
                 _iso(_utc_now()),
             ),
         )
         record_id = int(cursor.lastrowid)
     return _fetch_related("public_job_templates", record_id)
+
+
+def list_files(job_id: str, kind: str | None = None) -> list[dict]:
+    query = "SELECT * FROM public_job_files WHERE job_id = ?"
+    values: list[Any] = [job_id]
+    if kind is not None:
+        query += " AND kind = ?"
+        values.append(kind)
+    query += " ORDER BY id"
+    with _get_db() as conn:
+        rows = conn.execute(query, values).fetchall()
+    return [_decode_row(row) for row in rows]
+
+
+def get_file(file_id: int, job_id: str | None = None) -> dict | None:
+    query = "SELECT * FROM public_job_files WHERE id = ?"
+    values: list[Any] = [file_id]
+    if job_id is not None:
+        query += " AND job_id = ?"
+        values.append(job_id)
+    with _get_db() as conn:
+        row = conn.execute(query, values).fetchone()
+    return _decode_row(row)
+
+
+def list_templates(job_id: str) -> list[dict]:
+    with _get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM public_job_templates WHERE job_id = ? ORDER BY id",
+            (job_id,),
+        ).fetchall()
+    return [_decode_row(row) for row in rows]
+
+
+def get_template(template_id: int, job_id: str | None = None) -> dict | None:
+    query = "SELECT * FROM public_job_templates WHERE id = ?"
+    values: list[Any] = [template_id]
+    if job_id is not None:
+        query += " AND job_id = ?"
+        values.append(job_id)
+    with _get_db() as conn:
+        row = conn.execute(query, values).fetchone()
+    return _decode_row(row)
+
+
+def update_template_fields(
+    template_id: int,
+    fields: list[dict],
+    *,
+    preview_metadata: dict | None = None,
+    confirmation_status: str = "confirmed",
+) -> dict:
+    with _get_db() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE public_job_templates
+            SET fields_json = ?,
+                preview_metadata_json = COALESCE(?, preview_metadata_json),
+                confirmation_status = ?
+            WHERE id = ?
+            """,
+            (
+                _encode_json(fields),
+                _encode_json(preview_metadata),
+                confirmation_status,
+                template_id,
+            ),
+        )
+        if cursor.rowcount == 0:
+            raise LookupError("public job template not found")
+    updated = get_template(template_id)
+    if updated is None:  # pragma: no cover
+        raise LookupError("public job template not found")
+    return updated
 
 
 def add_document(job_id: str, template_id: int, ai_fields: dict) -> dict:
@@ -344,6 +423,69 @@ def add_document(job_id: str, template_id: int, ai_fields: dict) -> dict:
         )
         record_id = int(cursor.lastrowid)
     return _fetch_related("public_job_documents", record_id)
+
+
+def list_documents(job_id: str) -> list[dict]:
+    with _get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM public_job_documents WHERE job_id = ? ORDER BY id",
+            (job_id,),
+        ).fetchall()
+    return [_decode_row(row) for row in rows]
+
+
+def delete_documents(job_id: str) -> None:
+    """Remove draft/mapping documents before a deliberate evaluation rerun."""
+    with _get_db() as conn:
+        conn.execute("DELETE FROM public_job_documents WHERE job_id = ?", (job_id,))
+
+
+def get_document(document_id: int, job_id: str | None = None) -> dict | None:
+    query = "SELECT * FROM public_job_documents WHERE id = ?"
+    values: list[Any] = [document_id]
+    if job_id is not None:
+        query += " AND job_id = ?"
+        values.append(job_id)
+    with _get_db() as conn:
+        row = conn.execute(query, values).fetchone()
+    return _decode_row(row)
+
+
+def update_document(document_id: int, **changes: Any) -> dict:
+    allowed = {
+        "current_fields_json",
+        "status",
+        "docx_file_id",
+        "pdf_file_id",
+        "warnings_json",
+        "error_json",
+    }
+    unknown = set(changes) - allowed
+    if unknown:
+        raise ValueError(f"unsupported public document fields: {sorted(unknown)}")
+    if not changes:
+        existing = get_document(document_id)
+        if existing is None:
+            raise LookupError("public job document not found")
+        return existing
+    assignments: list[str] = []
+    values: list[Any] = []
+    for key, value in changes.items():
+        assignments.append(f"{key} = ?")
+        values.append(_encode_json(value) if key.endswith("_json") else value)
+    assignments.append("updated_at = ?")
+    values.extend([_iso(_utc_now()), document_id])
+    with _get_db() as conn:
+        cursor = conn.execute(
+            f"UPDATE public_job_documents SET {', '.join(assignments)} WHERE id = ?",
+            values,
+        )
+        if cursor.rowcount == 0:
+            raise LookupError("public job document not found")
+    updated = get_document(document_id)
+    if updated is None:  # pragma: no cover
+        raise LookupError("public job document not found")
+    return updated
 
 
 def add_revision(
