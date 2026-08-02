@@ -55,6 +55,13 @@ TESSERACT_COMMAND = os.getenv("TESSERACT_COMMAND", "tesseract")
 PUBLIC_JOB_CREATE_RATE = int(os.getenv("PUBLIC_JOB_CREATE_RATE", "20"))
 PUBLIC_JOB_MAX_CONCURRENCY = int(os.getenv("PUBLIC_JOB_MAX_CONCURRENCY", "2"))
 
+# Recoverable anonymous workspaces and reusable assets
+PUBLIC_WORKSPACE_ACTIVE_DAYS = int(os.getenv("PUBLIC_WORKSPACE_ACTIVE_DAYS", "365"))
+PUBLIC_WORKSPACE_GRACE_DAYS = int(os.getenv("PUBLIC_WORKSPACE_GRACE_DAYS", "30"))
+PUBLIC_WORKSPACE_STORAGE_DIR = os.path.join(
+    os.path.dirname(__file__), "data", "public_workspaces"
+)
+
 # Auth
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 USERS_JSON = os.getenv("APP_USERS", "{}")
@@ -87,6 +94,7 @@ os.makedirs(REPORT_STORAGE_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 os.makedirs(IMAGE_STORAGE_DIR, exist_ok=True)
 os.makedirs(PUBLIC_JOB_STORAGE_DIR, exist_ok=True)
+os.makedirs(PUBLIC_WORKSPACE_STORAGE_DIR, exist_ok=True)
 
 # ----- Startup check -----
 _STARTUP_OK = True
