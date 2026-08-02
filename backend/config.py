@@ -50,6 +50,8 @@ PUBLIC_JOB_MAX_FILES = int(os.getenv("PUBLIC_JOB_MAX_FILES", "30"))
 PUBLIC_JOB_MAX_TOTAL_SIZE = int(
     os.getenv("PUBLIC_JOB_MAX_TOTAL_SIZE", str(150 * 1024 * 1024))
 )
+LIBREOFFICE_COMMAND = os.getenv("LIBREOFFICE_COMMAND", "soffice")
+TESSERACT_COMMAND = os.getenv("TESSERACT_COMMAND", "tesseract")
 
 # Auth
 APP_ENV = os.getenv("APP_ENV", "development").lower()

@@ -17,7 +17,12 @@ RUN set -eux; \
         fi; \
     done; \
     apt-get update; \
-    apt-get install -y --no-install-recommends gcc; \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        fonts-noto-cjk \
+        libreoffice-writer \
+        tesseract-ocr \
+        tesseract-ocr-chi-sim; \
     rm -rf /var/lib/apt/lists/*
 
 # 安装Python依赖
