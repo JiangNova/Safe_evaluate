@@ -1,8 +1,10 @@
 """FastAPI application — Fire Safety Evaluation System backend."""
+import asyncio
 import json
 import os
 import sys
 import traceback
+from contextlib import asynccontextmanager, suppress
 from datetime import datetime
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends, Query
 from fastapi.responses import FileResponse
@@ -32,9 +34,29 @@ from .evaluator import evaluate_images
 from .rules_store import list_rules, create_rule, update_rule, delete_rule
 from .stats_service import get_all_stats
 from .public_jobs import init_public_job_db
+from .public_job_cleanup import cleanup_expired_public_jobs
 from .public_job_routes import router as public_job_router
 
-app = FastAPI(title="SafeEvaluate API", version="1.0.0")
+
+async def _public_job_cleanup_loop() -> None:
+    while True:
+        await asyncio.sleep(60 * 60)
+        await asyncio.to_thread(cleanup_expired_public_jobs)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await asyncio.to_thread(cleanup_expired_public_jobs)
+    cleanup_task = asyncio.create_task(_public_job_cleanup_loop())
+    try:
+        yield
+    finally:
+        cleanup_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await cleanup_task
+
+
+app = FastAPI(title="SafeEvaluate API", version="1.0.0", lifespan=lifespan)
 
 # Initialize database (create tables + migrate legacy JSON reports)
 init_db()

@@ -519,16 +519,28 @@ def add_revision(
 
 
 def delete_expired_jobs(now: datetime | None = None) -> list[str]:
+    job_ids = list_expired_job_ids(now)
+    delete_jobs(job_ids)
+    return job_ids
+
+
+def list_expired_job_ids(now: datetime | None = None) -> list[str]:
+    """Return expired job IDs without changing persistent state."""
     cutoff = _iso(now or _utc_now())
     with _get_db() as conn:
         rows = conn.execute(
             "SELECT id FROM public_jobs WHERE expires_at <= ? ORDER BY id",
             (cutoff,),
         ).fetchall()
-        job_ids = [row["id"] for row in rows]
-        if job_ids:
-            placeholders = ",".join("?" for _ in job_ids)
-            conn.execute(
-                f"DELETE FROM public_jobs WHERE id IN ({placeholders})", job_ids
-            )
-    return job_ids
+    return [row["id"] for row in rows]
+
+
+def delete_jobs(job_ids: list[str]) -> None:
+    """Delete selected jobs and all related rows through foreign-key cascades."""
+    if not job_ids:
+        return
+    placeholders = ",".join("?" for _ in job_ids)
+    with _get_db() as conn:
+        conn.execute(
+            f"DELETE FROM public_jobs WHERE id IN ({placeholders})", job_ids
+        )
