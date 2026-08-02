@@ -20,12 +20,23 @@ export async function generateDocument({ profile, taskType, requirement, files =
   return response.data;
 }
 
-export async function reviseDocument({ profile, taskType, contentMarkdown, instruction }) {
+export async function reviseDocument({
+  profile,
+  taskType,
+  requirement,
+  title,
+  contentMarkdown,
+  warnings = [],
+  revisionInstruction,
+}) {
   const response = await client.post('/revise', {
     profile,
     task_type: taskType,
+    requirement,
+    title,
     content_markdown: contentMarkdown,
-    instruction,
+    warnings,
+    revision_instruction: revisionInstruction,
   });
   return response.data;
 }
