@@ -37,6 +37,13 @@ class DocumentRenderError(RuntimeError):
     """A document could not be rendered or converted."""
 
 
+def render_compiled_template_docx(template_path, compiled, values, output_path, *, draft=True):
+    """Lazy compatibility entry point for the universal DOCX renderer."""
+    from .docx_renderer import render_compiled_docx
+
+    return render_compiled_docx(template_path, compiled, values, output_path, draft=draft)
+
+
 def _value_payload(values: dict, key: str) -> Any:
     raw = values.get(key, "")
     if hasattr(raw, "value"):
