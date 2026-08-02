@@ -129,7 +129,7 @@ export default function TemplateFieldEditor({ fields, sourceFormat, onChange }) 
               ))}
             </div>
           )}
-          <PlacementEditor locator={field.locator} sourceFormat={sourceFormat} />
+          <PlacementEditor locator={field.locator} sourceFormat={sourceFormat} onChange={(locator) => updateField(index, { locator })} />
         </article>
       ))}
 

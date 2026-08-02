@@ -262,9 +262,24 @@ def render_pdf(
     overlay = canvas.Canvas(overlay_stream)
     warnings: list[RenderWarning] = []
 
-    fields_by_page: dict[int, list[TemplateField]] = {}
+    fields_by_page: dict[int, list] = {}
+    native_values: dict[str, Any] = {}
     for field in fields:
-        page_number = int(field.locator.get("page", -1))
+        if hasattr(field, "placements"):
+            placement = next((item for item in field.placements if item.page is not None), None)
+            if placement is None:
+                continue
+            page_number = int(placement.page)
+            if placement.kind.startswith("pdf_form_"):
+                raw = _value_payload(values, field.key)
+                native_values[placement.anchor or field.key] = (
+                    "/Yes" if placement.kind == "pdf_form_checkbox" and bool(raw)
+                    else "/Off" if placement.kind == "pdf_form_checkbox"
+                    else _display_value(raw)
+                )
+                continue
+        else:
+            page_number = int(field.locator.get("page", -1))
         if page_number < 0 or page_number >= len(reader.pages):
             raise DocumentRenderError(f"字段 {field.key} 的 PDF 页码无效")
         fields_by_page.setdefault(page_number, []).append(field)
@@ -274,7 +289,39 @@ def render_pdf(
         height = float(page.mediabox.height)
         overlay.setPageSize((width, height))
         for field in fields_by_page.get(page_index, []):
-            rect = [float(value) for value in field.locator["rect"]]
+            if hasattr(field, "placements"):
+                placement = next(item for item in field.placements if item.page == page_index)
+                rect = [float(item) for item in (placement.rect or [])]
+                font_size = float(placement.font_size)
+                confirmed = placement.confirmed
+            else:
+                rect = [float(value) for value in field.locator["rect"]]
+                font_size = float(field.locator.get("font_size", 10))
+                confirmed = True
+            if not confirmed:
+                warnings.append(
+                    RenderWarning(
+                        "unconfirmed_pdf_placement",
+                        f"字段“{field.label}”的 PDF 位置尚未确认",
+                        field.key,
+                    )
+                )
+                continue
+            if (
+                len(rect) != 4
+                or rect[0] < 0
+                or rect[1] < 0
+                or rect[2] > width
+                or rect[3] > height
+            ):
+                warnings.append(
+                    RenderWarning(
+                        "pdf_rect_out_of_bounds",
+                        f"字段“{field.label}”超出 PDF 页面",
+                        field.key,
+                    )
+                )
+                continue
             value = _display_value(_value_payload(values, field.key))
             if field.required and not value.strip():
                 warnings.append(
@@ -284,14 +331,13 @@ def render_pdf(
                         field.key,
                     )
                 )
-            font_size = float(field.locator.get("font_size", 10))
             line_height = font_size * 1.25
             lines = _wrap_pdf_text(value, rect, font_size)
             available_lines = max(1, int((rect[3] - rect[1]) / line_height))
             if len(lines) > available_lines:
                 warnings.append(
                     RenderWarning(
-                        "field_overflow",
+                        "pdf_text_overflow" if hasattr(field, "placements") else "field_overflow",
                         f"字段“{field.label}”内容超出 PDF 填写区域",
                         field.key,
                     )
@@ -306,10 +352,22 @@ def render_pdf(
     overlay_stream.seek(0)
 
     overlay_reader = PdfReader(overlay_stream)
-    writer = PdfWriter()
-    for page_index, page in enumerate(reader.pages):
+    writer = PdfWriter(clone_from=template_path)
+    for page_index, page in enumerate(writer.pages):
         page.merge_page(overlay_reader.pages[page_index])
-        writer.add_page(page)
+    if native_values:
+        for page in writer.pages:
+            try:
+                writer.update_page_form_field_values(
+                    page, native_values, auto_regenerate=True
+                )
+            except Exception as exc:
+                warnings.append(
+                    RenderWarning(
+                        "pdf_form_appearance_failed",
+                        f"PDF 表单外观更新失败: {exc}",
+                    )
+                )
     output = os.path.abspath(output_path)
     os.makedirs(os.path.dirname(output), exist_ok=True)
     with open(output, "wb") as stream:

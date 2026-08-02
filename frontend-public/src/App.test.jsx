@@ -136,4 +136,11 @@ describe('public evaluation application', () => {
       expect(runtime).toContain(text);
     }
   });
+
+  it('edits PDF page, rectangle, font, alignment, and confirmation', () => {
+    const source = readSource('components/PdfPlacementEditor.jsx');
+    for (const text of ['页码', '填写区域', '字号', '对齐方式', '确认此位置']) {
+      expect(source).toContain(text);
+    }
+  });
 });

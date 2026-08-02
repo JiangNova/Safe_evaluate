@@ -28,7 +28,11 @@ def validate_document_for_finalize(
         value = raw.get("value", "") if isinstance(raw, dict) else raw
         if field.missing_policy == "block_finalize" and (value is None or value == "" or value == []):
             blocking_fields.append(field.key)
-    blocking_codes = {"stale_placement", "missing_required_field", "selection_conflict", "required_section_missing"}
+    blocking_codes = {
+        "stale_placement", "missing_required_field", "selection_conflict",
+        "required_section_missing", "unconfirmed_pdf_placement",
+        "pdf_rect_out_of_bounds", "pdf_text_overflow", "pdf_page_count_changed",
+    }
     blocking_warnings = []
     for warning in render_warnings:
         payload = warning if isinstance(warning, dict) else {

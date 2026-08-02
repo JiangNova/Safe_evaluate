@@ -59,6 +59,8 @@ from .document_applicability import assess_document_applicability
 from .document_quality import validate_document_for_finalize
 from .template_ir import CompiledTemplate, compile_legacy_fields
 from .docx_template_compiler import compile_docx_template
+from .pdf_template_compiler import compile_pdf_template
+from .pdf_quality import validate_pdf_render
 from .docx_renderer import render_compiled_docx
 from .text_document_renderer import render_text_document
 
@@ -333,7 +335,7 @@ async def upload_public_job_templates(
             compiled = (
                 compile_docx_template(record["storage_path"])
                 if parsed.source_format == "docx"
-                else None
+                else compile_pdf_template(record["storage_path"])
             )
             if auto_infer and not parsed.fields:
                 text = "\n".join(
@@ -769,9 +771,19 @@ async def _execute_finalization(job_id: str, document_id: int) -> None:
             else:
                 pdf_path = os.path.join(job_dir, f"document-{document_id}.pdf")
                 rendered = render_pdf(
-                    source_file["storage_path"], fields, values, pdf_path
+                    source_file["storage_path"],
+                    compiled.fields if compiled and compiled.kind == "pdf" else fields,
+                    values,
+                    pdf_path,
                 )
                 warnings.extend(asdict(item) for item in rendered.warnings)
+                if compiled and compiled.kind == "pdf":
+                    warnings.extend(
+                        asdict(item)
+                        for item in validate_pdf_render(
+                            source_file["storage_path"], rendered.path, compiled
+                        )
+                    )
                 pdf_record = public_files.register_generated_artifact(
                     job_id,
                     rendered.path,
@@ -867,7 +879,12 @@ async def render_document_draft(
         )
     else:
         output = os.path.join(job_dir, f"document-{document_id}-draft.pdf")
-        rendered = render_pdf(source_file["storage_path"], fields, values, output)
+        rendered = render_pdf(
+            source_file["storage_path"],
+            compiled.fields if compiled and compiled.kind == "pdf" else fields,
+            values,
+            output,
+        )
         record = public_files.register_generated_artifact(
             job_id, rendered.path,
             f"{Path(source_file['original_name']).stem}-草稿.pdf", "application/pdf",

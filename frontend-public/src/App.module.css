@@ -724,6 +724,20 @@
 .statusPanel p, .statusPanel small { margin: 0; }
 .blockingPanel { border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning); }
 
+.pdfPlacementEditor {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+}
+.pdfPlacementEditor > strong { grid-column: 1 / -1; }
+.pdfPlacementEditor label { display: grid; gap: 4px; color: var(--text-secondary); font-size: 11px; }
+.pdfPlacementEditor input, .pdfPlacementEditor select { min-width: 0; padding: 7px; border: 1px solid var(--border-input); border-radius: var(--radius-sm); background: white; }
+
 @media (max-width: 640px) {
   .jobModeCards, .scenarioGrid { grid-template-columns: 1fr; }
   .selectedResources li { align-items: flex-start; flex-wrap: wrap; }

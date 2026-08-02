@@ -24,6 +24,7 @@ from .workspace_models import (
 from .template_parser import parse_template
 from .text_template_compiler import compile_text_template
 from .docx_template_compiler import compile_docx_template
+from .pdf_template_compiler import compile_pdf_template
 
 
 router = APIRouter(prefix="/api/public/workspaces", tags=["public-workspaces"])
@@ -385,6 +386,8 @@ async def create_file_version(
         compiled = None
         if asset["asset_type"] == "template" and extension == ".docx":
             compiled = compile_docx_template(temporary_path).model_dump()
+        elif asset["asset_type"] == "template" and extension == ".pdf":
+            compiled = compile_pdf_template(temporary_path).model_dump()
         version = workspace_assets.add_asset_version(
             asset_id,
             WorkspaceAssetSource(

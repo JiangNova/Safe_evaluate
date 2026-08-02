@@ -19,7 +19,8 @@ PlacementKind = Literal[
     "placeholder_replace", "run_range_replace", "paragraph_insert", "date_parts",
     "checkbox_select", "table_cell_fill", "repeat_table_row", "header_footer_fill",
     "content_control_fill", "section_toggle", "pdf_overlay", "pdf_widget_fill",
-    "text_section",
+    "text_section", "pdf_form_text", "pdf_form_checkbox", "pdf_form_choice",
+    "pdf_text_rect", "pdf_checkbox_rect", "pdf_image_rect",
 ]
 
 
@@ -39,6 +40,11 @@ class Placement(BaseModel):
     option_marks: dict[str, Any] | None = None
     context: str = ""
     fingerprint: str = ""
+    confirmed: bool = True
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    font_size: float = 10.0
+    alignment: Literal["left", "center", "right"] = "left"
+    multiline: bool = False
 
 
 class CompiledField(BaseModel):

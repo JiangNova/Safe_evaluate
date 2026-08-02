@@ -256,6 +256,15 @@ def compiled_to_legacy_fields(compiled) -> list[dict]:
         locator = {"kind": "anchor", "anchor": field.label}
         if placement and placement.kind == "placeholder_replace":
             locator = {"kind": "placeholder", "placeholder": placement.placeholder}
+        elif placement and compiled.kind == "pdf":
+            locator = {
+                "kind": "pdf_rect",
+                "page": placement.page or 0,
+                "rect": placement.rect or [0, 0, 100, 20],
+                "font_size": placement.font_size,
+                "alignment": placement.alignment,
+                "confirmed": placement.confirmed,
+            }
         fields.append({
             "key": field.key, "label": field.label, "field_type": field_type,
             "required": field.required, "repeating": field.value_type in {"list", "table"},
