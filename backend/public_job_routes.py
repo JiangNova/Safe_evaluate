@@ -58,7 +58,7 @@ from .text_template_compiler import compile_text_template
 from .document_applicability import assess_document_applicability
 from .document_quality import validate_document_for_finalize
 from .template_ir import CompiledTemplate, compile_legacy_fields
-from .docx_template_compiler import compile_docx_template
+from .docx_template_compiler import compile_docx_template, merge_inferred_semantics
 from .pdf_template_compiler import compile_pdf_template
 from .pdf_quality import validate_pdf_render
 from .docx_renderer import render_compiled_docx
@@ -364,6 +364,8 @@ async def upload_public_job_templates(
                         warnings=[*parsed.warnings, f"AI 字段识别失败: {exc}"],
                         requires_confirmation=True,
                     )
+            if compiled and compiled.kind == "docx" and parsed.fields:
+                compiled = merge_inferred_semantics(compiled, parsed.fields)
             template = public_jobs.add_template(
                 job_id,
                 record["id"],
@@ -431,10 +433,31 @@ async def confirm_template_fields(
             "请至少确认一个输出字段",
             stage="field_confirm",
         )
+    preview_metadata = dict(body.preview_metadata or template.get("preview_metadata_json") or {})
+    compiled_data = preview_metadata.get("compiled_template")
+    if compiled_data:
+        compiled = CompiledTemplate.model_validate(compiled_data)
+        compiled_fields = []
+        for index, original in enumerate(compiled.fields):
+            if index >= len(fields):
+                break
+            confirmed = fields[index]
+            value_type = confirmed.field_type
+            if original.value_type == "single_choice":
+                value_type = "single_choice"
+            compiled_fields.append(original.model_copy(update={
+                "key": confirmed.key,
+                "label": confirmed.label,
+                "value_type": value_type,
+                "required": confirmed.required,
+            }))
+        preview_metadata["compiled_template"] = compiled.model_copy(
+            update={"fields": compiled_fields}
+        ).model_dump()
     updated = public_jobs.update_template_fields(
         template_id,
         [field.to_dict() for field in fields],
-        preview_metadata=body.preview_metadata,
+        preview_metadata=preview_metadata,
     )
     return _template_payload(updated)
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from docx import Document
 from pydantic import BaseModel, Field
 
-from .template_ir import CompiledField, CompiledTemplate, Placement
+from .template_ir import ApplicabilityRule, CompiledField, CompiledTemplate, Placement
 
 
 class PlacementCandidate(BaseModel):
@@ -152,8 +152,59 @@ def compile_docx_template(
             fill_source=semantics.get("fill_source", "ai_then_user"),
             placements=[Placement(**candidate.model_dump(exclude={"label", "options"}), option_marks={option: index for index, option in enumerate(candidate.options)})],
         ))
+    title = Path(path).stem
+    applicability_rules = []
+    if any(word in title for word in ("责令", "改正", "处罚", "处分")):
+        applicability_rules = [
+            ApplicabilityRule(requirement="违法或违规事实"),
+            ApplicabilityRule(requirement="适用制度或法规依据", basis_required=True),
+        ]
     return CompiledTemplate(
-        kind="docx", title=Path(path).stem, fields=fields,
+        kind="docx", title=title, fields=fields,
+        applicability_rules=applicability_rules,
         metadata={"candidate_count": len(candidates)},
         warnings=[] if candidates else ["未识别到可填写位置，请人工添加字段"],
     )
+
+
+def merge_inferred_semantics(
+    compiled: CompiledTemplate, inferred_fields: list
+) -> CompiledTemplate:
+    """Keep deterministic placements while applying AI-proposed field semantics."""
+    fields = list(compiled.fields)
+    unused = set(range(len(fields)))
+    merged: list[CompiledField] = []
+    for inferred_index, inferred in enumerate(inferred_fields):
+        anchor = str(getattr(inferred, "locator", {}).get("anchor", "")).strip()
+        match_index = next(
+            (
+                index for index in unused
+                if anchor and any(anchor in placement.context for placement in fields[index].placements)
+            ),
+            None,
+        )
+        if match_index is None and inferred_index in unused:
+            match_index = inferred_index
+        if match_index is None:
+            continue
+        unused.remove(match_index)
+        original = fields[match_index]
+        value_type = getattr(inferred, "field_type", "text")
+        if original.value_type == "single_choice":
+            value_type = "single_choice"
+        merged.append(original.model_copy(update={
+            "key": inferred.key,
+            "label": inferred.label,
+            "value_type": value_type,
+            "required": inferred.required,
+        }))
+    merged.extend(fields[index] for index in sorted(unused))
+    seen = set()
+    normalized = []
+    for index, field in enumerate(merged, start=1):
+        key = field.key
+        while key in seen:
+            key = f"{field.key}_{index}"
+        seen.add(key)
+        normalized.append(field.model_copy(update={"key": key}))
+    return compiled.model_copy(update={"fields": normalized})

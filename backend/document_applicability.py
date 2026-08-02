@@ -38,11 +38,23 @@ async def assess_document_applicability(
     missing = []
     for rule in compiled.applicability_rules:
         requirement_text = rule.requirement.lower()
+        keywords = [
+            word for word in (
+                "违法", "违规", "事实", "依据", "制度", "法规", "处罚",
+                "整改", "隐患", "员工", "消防",
+            ) if word in requirement_text
+        ]
         matching = [
             item for item in known
-            if requirement_text in f"{item.criterion} {item.observation} {item.reasoning}".lower()
+            if (rule.basis_required and item.basis_reference)
+            or requirement_text in f"{item.criterion} {item.observation} {item.reasoning}".lower()
+            or any(
+                keyword in f"{item.criterion} {item.observation} {item.reasoning}".lower()
+                for keyword in keywords
+            )
         ]
-        if not matching or (rule.evidence_required and not any(item.evidence_refs for item in matching)):
+        basis_missing = rule.basis_required and not any(item.basis_reference for item in matching)
+        if not matching or basis_missing or (rule.evidence_required and not any(item.evidence_refs for item in matching)):
             if rule.blocking:
                 missing.append(rule.requirement)
     if missing and completion is None:
