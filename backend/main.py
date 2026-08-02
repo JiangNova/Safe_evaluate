@@ -36,6 +36,9 @@ from .stats_service import get_all_stats
 from .public_jobs import init_public_job_db
 from .public_job_cleanup import cleanup_expired_public_jobs
 from .public_job_routes import router as public_job_router
+from .public_workspaces import init_workspace_db
+from .workspace_assets import init_workspace_asset_db
+from .workspace_routes import router as workspace_router
 
 
 async def _public_job_cleanup_loop() -> None:
@@ -61,7 +64,10 @@ app = FastAPI(title="SafeEvaluate API", version="1.0.0", lifespan=lifespan)
 # Initialize database (create tables + migrate legacy JSON reports)
 init_db()
 init_public_job_db()
+init_workspace_db()
+init_workspace_asset_db()
 app.include_router(public_job_router)
+app.include_router(workspace_router)
 
 # CORS
 app.add_middleware(
