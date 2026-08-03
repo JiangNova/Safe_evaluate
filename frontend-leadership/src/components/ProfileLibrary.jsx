@@ -1,4 +1,4 @@
-export default function ProfileLibrary({ profiles, activeProfileId, onSelect, onCreate, onDelete }) {
+export default function ProfileLibrary({ profiles, activeProfileId, accountName, onSelect, onCreate, onDelete, onRestoreDefault }) {
   return (
     <section className="panel profile-library" aria-label="身份档案列表">
       <div className="panel-heading">
@@ -6,7 +6,10 @@ export default function ProfileLibrary({ profiles, activeProfileId, onSelect, on
           <p className="eyebrow">本地工作区</p>
           <h2>我的身份档案</h2>
         </div>
-        <button className="icon-button" type="button" onClick={onCreate} aria-label="新建身份档案">＋</button>
+        <div className="profile-library-actions">
+          <button className="text-button" type="button" onClick={onRestoreDefault}>恢复默认</button>
+          <button className="icon-button" type="button" onClick={onCreate} aria-label="新建身份档案">＋</button>
+        </div>
       </div>
 
       <p className="panel-intro">为不同岗位建立专属工作语境，生成时会结合所选身份。</p>
@@ -30,7 +33,7 @@ export default function ProfileLibrary({ profiles, activeProfileId, onSelect, on
           </div>
         ))}
       </div>
-      <div className="local-note">本地保存 · 无需账号</div>
+      <div className="local-note">本地保存 · 当前账号：{accountName}</div>
     </section>
   );
 }

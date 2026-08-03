@@ -1,10 +1,32 @@
-const STORAGE_PREFIX = 'leadership-assistant:v1';
+const STORAGE_PREFIX = 'leadership-assistant:v2';
+let activeAccount = null;
 
-export const STORAGE_KEYS = {
-  profiles: `${STORAGE_PREFIX}:profiles`,
-  draft: `${STORAGE_PREFIX}:draft`,
-  documents: `${STORAGE_PREFIX}:documents`,
-};
+export const STORAGE_KEYS = {};
+
+function refreshStorageKeys() {
+  const account = activeAccount || 'anonymous';
+  const prefix = `${STORAGE_PREFIX}:${account}`;
+  STORAGE_KEYS.profiles = `${prefix}:profiles`;
+  STORAGE_KEYS.draft = `${prefix}:draft`;
+  STORAGE_KEYS.documents = `${prefix}:documents`;
+  STORAGE_KEYS.defaultsInitialized = `${prefix}:defaults-initialized`;
+}
+
+refreshStorageKeys();
+
+export function setStorageAccount(username) {
+  activeAccount = String(username || '').trim() || null;
+  refreshStorageKeys();
+}
+
+export function clearStorageAccount() {
+  activeAccount = null;
+  refreshStorageKeys();
+}
+
+export function getStorageAccount() {
+  return activeAccount;
+}
 
 const EMPTY_DRAFT = {};
 const MAX_DOCUMENTS = 50;
@@ -85,6 +107,18 @@ export function deleteProfile(profileId) {
   const nextProfiles = listProfiles().filter((profile) => profile.id !== profileId);
   writeJson(STORAGE_KEYS.profiles, nextProfiles);
   return nextProfiles;
+}
+
+export function defaultsWereInitialized() {
+  return globalThis.localStorage?.getItem(STORAGE_KEYS.defaultsInitialized) === 'true';
+}
+
+export function markDefaultsInitialized() {
+  try {
+    globalThis.localStorage?.setItem(STORAGE_KEYS.defaultsInitialized, 'true');
+  } catch {
+    // Browsers that deny local storage retain the existing in-memory editing flow.
+  }
 }
 
 export function loadDraft() {
