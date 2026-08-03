@@ -7,6 +7,8 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
 from fastapi.testclient import TestClient
 
 from backend.leadership_writer import GeneratedDocument, LeadershipWriterError
@@ -202,6 +204,27 @@ class LeadershipRouteTests(unittest.TestCase):
         document = Document(io.BytesIO(response.content))
         self.assertIn("工作部署", "\n".join(p.text for p in document.paragraphs))
         self.assertIn("正文", "\n".join(p.text for p in document.paragraphs))
+
+    def test_export_uses_chinese_document_style_and_parses_inline_bold(self):
+        response = client.post(
+            "/api/leader-assistant/export/docx",
+            headers=leadership_headers(),
+            json={
+                "title": "人工智能学院消防安全工作落实方案",
+                "content_markdown": "# 人工智能学院消防安全工作落实方案\n\n一、提高认识\n\n要深入**学习理解**消防安全要求，落实责任。",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        document = Document(io.BytesIO(response.content))
+        self.assertEqual(document.paragraphs[0].alignment, WD_ALIGN_PARAGRAPH.CENTER)
+        body = next(paragraph for paragraph in document.paragraphs if "学习理解" in paragraph.text)
+        self.assertNotIn("**", body.text)
+        emphasized = next(run for run in body.runs if run.text == "学习理解")
+        self.assertTrue(emphasized.bold)
+        self.assertEqual(emphasized._element.rPr.rFonts.get(qn("w:eastAsia")), "宋体")
+        self.assertIsNotNone(body.paragraph_format.first_line_indent)
+        self.assertEqual(body.paragraph_format.line_spacing, 1.5)
 
 
 if __name__ == "__main__":

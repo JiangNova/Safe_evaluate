@@ -9,6 +9,10 @@ import tempfile
 from pathlib import Path
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Pt
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -198,9 +202,75 @@ async def revise_leadership_document(
         ) from exc
 
 
+def _set_run_font(run, font_name: str, font_size: float, *, bold: bool = False) -> None:
+    """Set Latin and East Asian fonts explicitly so Chinese text renders predictably."""
+    run.font.name = font_name
+    run.font.size = Pt(font_size)
+    run.bold = bold
+    r_pr = run._element.get_or_add_rPr()
+    r_fonts = r_pr.rFonts
+    if r_fonts is None:
+        r_fonts = OxmlElement("w:rFonts")
+        r_pr.append(r_fonts)
+    for attribute in ("w:ascii", "w:hAnsi", "w:eastAsia", "w:cs"):
+        r_fonts.set(qn(attribute), font_name)
+
+
+def _configure_document(document: Document) -> None:
+    section = document.sections[0]
+    section.page_width = Cm(21)
+    section.page_height = Cm(29.7)
+    section.top_margin = Cm(2.54)
+    section.bottom_margin = Cm(2.54)
+    section.left_margin = Cm(3.17)
+    section.right_margin = Cm(3.17)
+    normal = document.styles["Normal"]
+    normal.font.name = "宋体"
+    normal.font.size = Pt(12)
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), "宋体")
+
+
+def _add_inline_markdown(paragraph, text: str, *, font_name: str = "宋体", font_size: float = 12, bold: bool = False) -> None:
+    """Write plain text and ``**bold**`` spans without exposing Markdown markers."""
+    parts = re.split(r"(\*\*.+?\*\*)", text)
+    for part in parts:
+        if not part:
+            continue
+        is_bold = part.startswith("**") and part.endswith("**")
+        run = paragraph.add_run(part[2:-2] if is_bold else part.replace("**", ""))
+        _set_run_font(run, font_name, font_size, bold=bold or is_bold)
+
+
+def _add_heading(document: Document, text: str, level: int) -> None:
+    paragraph = document.add_paragraph()
+    paragraph.paragraph_format.space_before = Pt(12 if level == 1 else 8)
+    paragraph.paragraph_format.space_after = Pt(6)
+    paragraph.paragraph_format.keep_with_next = True
+    _add_inline_markdown(
+        paragraph,
+        text,
+        font_name="黑体",
+        font_size=16 if level == 1 else 14,
+        bold=True,
+    )
+
+
+def _add_body_paragraph(document: Document, text: str, *, style: str | None = None) -> None:
+    paragraph = document.add_paragraph(style=style)
+    paragraph.paragraph_format.line_spacing = 1.5
+    paragraph.paragraph_format.space_after = Pt(0)
+    if style is None:
+        paragraph.paragraph_format.first_line_indent = Pt(24)
+    _add_inline_markdown(paragraph, text)
+
+
 def _render_markdown(document: Document, content_markdown: str, title: str) -> None:
-    """Render the small Markdown subset produced by the assistant into Word."""
-    document.add_heading(title, level=0)
+    """Render assistant Markdown into a formal Chinese Word document."""
+    _configure_document(document)
+    title_paragraph = document.add_paragraph()
+    title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_paragraph.paragraph_format.space_after = Pt(18)
+    _add_inline_markdown(title_paragraph, title, font_name="黑体", font_size=22, bold=True)
     rendered_title = False
     for raw_line in content_markdown.splitlines():
         line = raw_line.strip()
@@ -212,16 +282,20 @@ def _render_markdown(document: Document, content_markdown: str, title: str) -> N
             if not rendered_title and heading_text == title:
                 rendered_title = True
                 continue
-            document.add_heading(heading_text, level=len(heading.group(1)))
+            _add_heading(document, heading_text, len(heading.group(1)))
             continue
         if line.startswith(("- ", "* ")):
-            document.add_paragraph(line[2:].strip(), style="List Bullet")
+            _add_body_paragraph(document, line[2:].strip(), style="List Bullet")
             continue
-        numbered = re.match(r"^\d+[.、]\s+(.+)$", line)
+        numbered = re.match(r"^\d+[.\u3001]\s+(.+)$", line)
         if numbered:
-            document.add_paragraph(numbered.group(1), style="List Number")
+            _add_body_paragraph(document, numbered.group(1), style="List Number")
             continue
-        document.add_paragraph(line)
+        chinese_heading = re.match(r"^(?:[一二三四五六七八九十]+、|（[一二三四五六七八九十]+）).+", line)
+        if chinese_heading:
+            _add_heading(document, line, 1)
+            continue
+        _add_body_paragraph(document, line)
 
 
 def _safe_filename(title: str) -> str:
