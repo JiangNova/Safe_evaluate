@@ -66,6 +66,11 @@ PUBLIC_WORKSPACE_STORAGE_DIR = os.path.join(
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 USERS_JSON = os.getenv("APP_USERS", "{}")
 USERS = _json.loads(USERS_JSON) if USERS_JSON else {}
+LEADERSHIP_USERS_JSON = os.getenv(
+    "LEADERSHIP_ASSISTANT_USERS",
+    '{"wanxin": "wanxin", "wanqin": "wanqin"}',
+)
+LEADERSHIP_USERS = _json.loads(LEADERSHIP_USERS_JSON) if LEADERSHIP_USERS_JSON else {}
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 JWT_EXPIRY_HOURS = int(os.getenv("JWT_EXPIRY_HOURS", "24"))
 

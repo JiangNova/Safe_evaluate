@@ -7,6 +7,8 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
 from fastapi.testclient import TestClient
 
 from backend.leadership_writer import GeneratedDocument, LeadershipWriterError
@@ -14,6 +16,19 @@ from backend.main import app
 
 
 client = TestClient(app)
+
+
+def leadership_token(username: str = "wanxin", password: str = "wanxin") -> str:
+    response = client.post(
+        "/api/leader-assistant/auth/login",
+        json={"username": username, "password": password},
+    )
+    assert response.status_code == 200
+    return response.json()["token"]
+
+
+def leadership_headers() -> dict:
+    return {"Authorization": f"Bearer {leadership_token()}"}
 
 
 def profile_payload() -> dict:
@@ -37,6 +52,28 @@ def generated_document() -> GeneratedDocument:
 
 
 class LeadershipRouteTests(unittest.TestCase):
+    def test_login_accepts_only_configured_leadership_accounts(self):
+        for username, password in (("wanxin", "wanxin"), ("wanqin", "wanqin")):
+            response = client.post(
+                "/api/leader-assistant/auth/login",
+                json={"username": username, "password": password},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["user"], {"username": username, "role": "leader_assistant"})
+
+        rejected = client.post(
+            "/api/leader-assistant/auth/login",
+            json={"username": "wanxin", "password": "incorrect"},
+        )
+        self.assertEqual(rejected.status_code, 401)
+
+    def test_export_requires_leadership_token(self):
+        response = client.post(
+            "/api/leader-assistant/export/docx",
+            json={"title": "工作部署", "content_markdown": "正文"},
+        )
+        self.assertEqual(response.status_code, 401)
+
     def test_generate_returns_document_without_persisting_upload(self):
         with patch(
             "backend.leadership_routes.generate_document",
@@ -44,6 +81,7 @@ class LeadershipRouteTests(unittest.TestCase):
         ) as mocked_generate:
             response = client.post(
                 "/api/leader-assistant/generate",
+                headers=leadership_headers(),
                 data={
                     "profile": json.dumps(profile_payload(), ensure_ascii=False),
                     "task_type": "safety_deployment",
@@ -60,6 +98,7 @@ class LeadershipRouteTests(unittest.TestCase):
     def test_generate_rejects_invalid_profile_before_writer_call(self):
         response = client.post(
             "/api/leader-assistant/generate",
+            headers=leadership_headers(),
             data={
                 "profile": "{}",
                 "task_type": "safety_deployment",
@@ -78,6 +117,7 @@ class LeadershipRouteTests(unittest.TestCase):
         ):
             response = client.post(
                 "/api/leader-assistant/generate",
+                headers=leadership_headers(),
                 data={
                     "profile": json.dumps(profile_payload(), ensure_ascii=False),
                     "task_type": "summary",
@@ -113,6 +153,7 @@ class LeadershipRouteTests(unittest.TestCase):
         ):
             response = client.post(
                 "/api/leader-assistant/generate",
+                headers=leadership_headers(),
                 data={
                     "profile": json.dumps(profile_payload(), ensure_ascii=False),
                     "task_type": "custom",
@@ -132,6 +173,7 @@ class LeadershipRouteTests(unittest.TestCase):
         ) as mocked_revise:
             response = client.post(
                 "/api/leader-assistant/revise",
+                headers=leadership_headers(),
                 json={
                     "profile": profile_payload(),
                     "task_type": "implementation_report",
@@ -149,6 +191,7 @@ class LeadershipRouteTests(unittest.TestCase):
     def test_export_returns_docx_attachment(self):
         response = client.post(
             "/api/leader-assistant/export/docx",
+            headers=leadership_headers(),
             json={"title": "工作部署", "content_markdown": "# 工作部署\n\n正文"},
         )
 
@@ -161,6 +204,27 @@ class LeadershipRouteTests(unittest.TestCase):
         document = Document(io.BytesIO(response.content))
         self.assertIn("工作部署", "\n".join(p.text for p in document.paragraphs))
         self.assertIn("正文", "\n".join(p.text for p in document.paragraphs))
+
+    def test_export_uses_chinese_document_style_and_parses_inline_bold(self):
+        response = client.post(
+            "/api/leader-assistant/export/docx",
+            headers=leadership_headers(),
+            json={
+                "title": "人工智能学院消防安全工作落实方案",
+                "content_markdown": "# 人工智能学院消防安全工作落实方案\n\n一、提高认识\n\n要深入**学习理解**消防安全要求，落实责任。",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        document = Document(io.BytesIO(response.content))
+        self.assertEqual(document.paragraphs[0].alignment, WD_ALIGN_PARAGRAPH.CENTER)
+        body = next(paragraph for paragraph in document.paragraphs if "学习理解" in paragraph.text)
+        self.assertNotIn("**", body.text)
+        emphasized = next(run for run in body.runs if run.text == "学习理解")
+        self.assertTrue(emphasized.bold)
+        self.assertEqual(emphasized._element.rPr.rFonts.get(qn("w:eastAsia")), "宋体")
+        self.assertIsNotNone(body.paragraph_format.first_line_indent)
+        self.assertEqual(body.paragraph_format.line_spacing, 1.5)
 
 
 if __name__ == "__main__":

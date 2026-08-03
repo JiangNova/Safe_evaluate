@@ -1,9 +1,52 @@
 import axios from 'axios';
 
+const SESSION_KEY = 'leadership-assistant:v2:session';
+
+export function getLeadershipSession() {
+  try {
+    const value = JSON.parse(globalThis.localStorage?.getItem(SESSION_KEY) || 'null');
+    return value?.token && value?.username ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLeadershipSession(session) {
+  const saved = { token: session.token, username: session.user.username, role: session.user.role };
+  globalThis.localStorage?.setItem(SESSION_KEY, JSON.stringify(saved));
+  return saved;
+}
+
+export function clearLeadershipSession() {
+  globalThis.localStorage?.removeItem(SESSION_KEY);
+}
+
 const client = axios.create({
   baseURL: '/api/leader-assistant',
   timeout: 300000,
 });
+
+client.interceptors.request.use((config) => {
+  const session = getLeadershipSession();
+  if (session?.token) config.headers.Authorization = `Bearer ${session.token}`;
+  return config;
+});
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && !error?.config?.url?.includes('/auth/login')) {
+      clearLeadershipSession();
+      globalThis.location?.assign?.('/leader-assistant/');
+    }
+    return Promise.reject(error);
+  },
+);
+
+export async function loginLeadershipUser({ username, password }) {
+  const response = await client.post('/auth/login', { username, password });
+  return saveLeadershipSession(response.data);
+}
 
 function appendFiles(formData, files = []) {
   Array.from(files).forEach((file) => formData.append('files', file));

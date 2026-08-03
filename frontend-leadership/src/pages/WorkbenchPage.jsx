@@ -5,7 +5,8 @@ import ProfileEditor from '../components/ProfileEditor';
 import ProfileLibrary from '../components/ProfileLibrary';
 import TaskComposer from '../components/TaskComposer';
 import { downloadDocument, generateDocument, reviseDocument } from '../services/leaderApi';
-import { deleteDocument, deleteProfile, listDocuments, listProfiles, loadDraft, saveDocument, saveDraft, saveProfile } from '../services/leaderStorage';
+import { ensureDefaultProfiles, restoreDefaultProfile } from '../services/defaultProfiles';
+import { deleteDocument, deleteProfile, listDocuments, listProfiles, loadDraft, saveDocument, saveDraft, saveProfile, setStorageAccount } from '../services/leaderStorage';
 import styles from './WorkbenchPage.module.css';
 
 const EMPTY_PROFILE = { name: '', title: '', organization: '', responsibilities: '', focusAreas: '', writingPreferences: '', notes: '' };
@@ -39,8 +40,12 @@ function apiErrorMessage(caught, fallback) {
   return detail?.message || caught?.response?.data?.message || caught?.message || fallback;
 }
 
-export default function WorkbenchPage() {
-  const initialDraft = useMemo(() => loadDraft(), []);
+export default function WorkbenchPage({ accountName, onLogout }) {
+  setStorageAccount(accountName);
+  const initialDraft = useMemo(() => {
+    ensureDefaultProfiles(accountName);
+    return loadDraft();
+  }, [accountName]);
   const [profiles, setProfiles] = useState(() => listProfiles());
   const [documents, setDocuments] = useState(() => listDocuments());
   const [activeProfileId, setActiveProfileId] = useState(() => {
@@ -103,6 +108,16 @@ export default function WorkbenchPage() {
       setProfileForm(snapshot(nextActive || EMPTY_PROFILE));
     }
     setNotice('身份档案已删除。');
+  };
+
+  const restoreDefault = () => {
+    const restored = restoreDefaultProfile(accountName);
+    if (!restored) return;
+    setProfiles(listProfiles());
+    setActiveProfileId(restored.id);
+    setProfileForm(snapshot(restored));
+    setNotice('默认身份档案已恢复。');
+    setError('');
   };
 
   const validateTask = (profile = activeProfile) => {
@@ -228,12 +243,12 @@ export default function WorkbenchPage() {
     <main className={`app-shell ${styles.workbench}`}>
       <header className="workbench-header">
         <div><p className="eyebrow">LEADERSHIP WRITING ASSISTANT</p><h1>领导文稿助手</h1></div>
-        <p>结合身份档案、工作要求与参考材料，形成可继续编辑的文稿初稿。</p>
+        <div className="workbench-account"><p>结合身份档案、工作要求与参考材料，形成可继续编辑的文稿初稿。</p><button type="button" className="secondary-button" onClick={onLogout}>退出登录</button></div>
       </header>
       {(error || notice) && <div role="status" className={`status-message ${error ? 'is-error' : 'is-success'}`}>{error || notice}</div>}
       <div className="workbench-grid">
         <aside className="left-column">
-          <ProfileLibrary profiles={profiles} activeProfileId={activeProfileId} onSelect={selectProfile} onCreate={createProfile} onDelete={removeProfile} />
+          <ProfileLibrary profiles={profiles} activeProfileId={activeProfileId} accountName={accountName} onSelect={selectProfile} onCreate={createProfile} onDelete={removeProfile} onRestoreDefault={restoreDefault} />
           <ProfileEditor profile={profileForm} isNew={!activeProfile} onChange={(key, value) => setProfileForm((current) => ({ ...current, [key]: value }))} onSave={saveCurrentProfile} onCancel={() => activeProfile && setProfileForm(snapshot(activeProfile))} />
         </aside>
         <section className="center-column">

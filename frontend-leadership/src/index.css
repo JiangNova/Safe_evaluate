@@ -25,10 +25,17 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .58; }
 
 .app-shell { min-height: 100vh; padding: 30px; }
+.login-shell { align-items: center; display: grid; min-height: 100vh; padding: 24px; place-items: center; }
+.login-panel { background: #fff; border: 1px solid #e1e8f1; border-radius: 18px; box-shadow: 0 14px 40px rgba(21, 42, 74, .1); display: grid; gap: 15px; max-width: 410px; padding: 32px; width: 100%; }
+.login-panel h1 { color: #102442; font-size: 28px; margin: 0; }
+.login-panel > p:not(.eyebrow) { color: #64748b; font-size: 14px; line-height: 1.65; margin: -5px 0 4px; }
+.login-submit { margin-top: 4px; width: 100%; }
 .workbench-header { align-items: end; display: flex; justify-content: space-between; gap: 24px; margin: 0 auto 20px; max-width: 1800px; }
 .workbench-header h1, .panel h2 { margin: 3px 0 0; color: #102442; }
 .workbench-header h1 { font-size: 28px; letter-spacing: .03em; }
 .workbench-header > p { color: #64748b; margin: 0; max-width: 520px; line-height: 1.65; }
+.workbench-account { align-items: center; display: flex; gap: 14px; }
+.workbench-account p { color: #64748b; line-height: 1.65; margin: 0; max-width: 520px; }
 .eyebrow { color: #238c7a; font-size: 11px; font-weight: 700; letter-spacing: .12em; margin: 0; text-transform: uppercase; }
 .workbench-grid { display: grid; gap: 18px; grid-template-columns: minmax(290px, .84fr) minmax(400px, 1.2fr) minmax(400px, 1.35fr); margin: 0 auto; max-width: 1800px; align-items: start; }
 .left-column, .center-column, .right-column { display: grid; gap: 18px; }
@@ -38,6 +45,8 @@ button:disabled { cursor: not-allowed; opacity: .58; }
 .panel-intro, .empty-compact, .browser-warning, .empty-editor > p:not(.eyebrow) { color: #64748b; font-size: 13px; line-height: 1.6; }
 .icon-button, .delete-button { align-items: center; background: transparent; border: 0; color: #6b7b91; display: inline-flex; font-size: 22px; height: 28px; justify-content: center; width: 28px; }
 .icon-button { background: #e9f7f4; border-radius: 50%; color: #117262; }
+.profile-library-actions { align-items: center; display: flex; gap: 6px; }
+.text-button { background: transparent; border: 0; color: #197866; font-size: 12px; font-weight: 700; padding: 5px; }
 .profile-list, .history-list { display: grid; gap: 8px; margin-top: 15px; }
 .profile-item, .history-item { align-items: center; border: 1px solid #e7edf4; border-radius: 10px; display: flex; padding: 3px 5px 3px 8px; }
 .profile-item.is-active, .history-item.is-active { background: #effaf7; border-color: #78cdbd; }
