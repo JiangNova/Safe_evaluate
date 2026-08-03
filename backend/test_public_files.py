@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from docx import Document
+from PIL import Image
 
 from backend import public_files, public_jobs
 
@@ -25,6 +26,13 @@ def make_docx_bytes() -> bytes:
     table.cell(0, 1).text = "Threshold"
     stream = io.BytesIO()
     doc.save(stream)
+    return stream.getvalue()
+
+
+def make_image_bytes(image_format: str, size: tuple[int, int]) -> bytes:
+    image = Image.new("RGB", size, color=(24, 96, 144))
+    stream = io.BytesIO()
+    image.save(stream, format=image_format)
     return stream.getvalue()
 
 
@@ -138,6 +146,67 @@ class PublicFileTests(unittest.TestCase):
         source = public_files.extract_source(record)
         self.assertEqual(source.media_type, "image")
         self.assertEqual(source.chunks[0].source_ref, "image:photo.png")
+
+    def test_large_jpeg_uses_a_smaller_evaluation_copy_without_changing_original(self):
+        original = make_image_bytes("JPEG", (3200, 1600))
+        path = os.path.join(self.temp_dir.name, "large.jpg")
+        with open(path, "wb") as output:
+            output.write(original)
+        record = {
+            "kind": "material",
+            "safe_name": "large.jpg",
+            "mime_type": "image/jpeg",
+            "storage_path": path,
+        }
+
+        prepared, mime_type = public_files.prepare_evaluation_image(record)
+
+        self.assertEqual(mime_type, "image/jpeg")
+        with Image.open(io.BytesIO(prepared)) as image:
+            self.assertEqual(image.size, (2560, 1280))
+        with open(path, "rb") as original_file:
+            self.assertEqual(original_file.read(), original)
+
+    def test_small_jpeg_and_png_use_the_original_bytes(self):
+        for name, mime_type, image_format in (
+            ("small.jpg", "image/jpeg", "JPEG"),
+            ("diagram.png", "image/png", "PNG"),
+        ):
+            with self.subTest(name=name):
+                original = make_image_bytes(image_format, (800, 600))
+                path = os.path.join(self.temp_dir.name, name)
+                with open(path, "wb") as output:
+                    output.write(original)
+
+                prepared, prepared_mime = public_files.prepare_evaluation_image(
+                    {
+                        "kind": "material",
+                        "safe_name": name,
+                        "mime_type": mime_type,
+                        "storage_path": path,
+                    }
+                )
+
+                self.assertEqual(prepared, original)
+                self.assertEqual(prepared_mime, mime_type)
+
+    def test_invalid_jpeg_falls_back_to_the_original_bytes(self):
+        original = b"\xff\xd8\xffnot-a-real-jpeg"
+        path = os.path.join(self.temp_dir.name, "broken.jpg")
+        with open(path, "wb") as output:
+            output.write(original)
+
+        prepared, mime_type = public_files.prepare_evaluation_image(
+            {
+                "kind": "material",
+                "safe_name": "broken.jpg",
+                "mime_type": "image/jpeg",
+                "storage_path": path,
+            }
+        )
+
+        self.assertEqual(prepared, original)
+        self.assertEqual(mime_type, "image/jpeg")
 
 
 if __name__ == "__main__":

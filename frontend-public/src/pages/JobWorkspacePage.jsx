@@ -16,7 +16,14 @@ import {
 import styles from '../App.module.css';
 
 const STEPS = ['评估说明', '待评估材料', '评估依据', '输出模板', '字段确认', '生成与校核'];
-const ACTIVE = new Set(['evaluating', 'mapping', 'finalizing']);
+const PROCESSING_PHASES = {
+  queued: '正在排队',
+  preprocessing: '正在优化评估图片',
+  evaluating: '正在进行视觉评估',
+  mapping: '正在生成模板内容',
+  finalizing: '正在生成最终文件',
+};
+const ACTIVE = new Set(Object.keys(PROCESSING_PHASES));
 
 function saveBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -165,7 +172,8 @@ export default function JobWorkspacePage() {
   if (!job) return <div className={styles.flowError}>{error}</div>;
 
   const expiresAt = new Date(job.expires_at).toLocaleString('zh-CN');
-  const waiting = ACTIVE.has(job.status) || (job.status === 'evaluating' && job.documents.length === 0);
+  const waiting = ACTIVE.has(job.status);
+  const processingLabel = PROCESSING_PHASES[job.status] || '正在生成评估结果';
 
   return (
     <div className={styles.flowPage}>
@@ -178,7 +186,7 @@ export default function JobWorkspacePage() {
       {waiting && (
         <div className={styles.processingCard}>
           <span className={styles.spinner} />
-          <div><h2>正在生成评估结果和模板字段</h2><p>当前阶段：{job.status}</p></div>
+          <div><h2>{processingLabel}</h2><p>当前阶段：{job.status}</p></div>
         </div>
       )}
 
