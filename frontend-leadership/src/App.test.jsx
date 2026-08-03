@@ -22,6 +22,8 @@ describe('领导文稿助手工作台', () => {
     expect(source).toContain('生成文稿初稿');
     expect(source).toContain('登录');
     expect(source).toContain('退出登录');
+    expect(readFileSync(apiPath, 'utf8')).toContain('Authorization');
+    expect(readFileSync(apiPath, 'utf8')).toContain('clearLeadershipSession');
   });
 
   it('改写请求保持与匿名文稿接口的字段合同一致', () => {

@@ -32,6 +32,17 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && !error?.config?.url?.includes('/auth/login')) {
+      clearLeadershipSession();
+      globalThis.location?.assign?.('/leader-assistant/');
+    }
+    return Promise.reject(error);
+  },
+);
+
 export async function loginLeadershipUser({ username, password }) {
   const response = await client.post('/auth/login', { username, password });
   return saveLeadershipSession(response.data);
