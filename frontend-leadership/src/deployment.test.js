@@ -20,10 +20,11 @@ async function readSourceFiles(directory) {
 
 describe('AI写作助手私有部署', () => {
   it('以固定子路径构建，并由 nginx 提供资源、跳转与 SPA 回退', async () => {
-    const [viteConfig, nginxConfig, composeConfig] = await Promise.all([
+    const [viteConfig, nginxConfig, composeConfig, indexHtml] = await Promise.all([
       readFile(resolve(frontendRoot, 'vite.config.js'), 'utf8'),
       readFile(resolve(repositoryRoot, 'nginx.conf'), 'utf8'),
       readFile(resolve(repositoryRoot, 'docker-compose.yml'), 'utf8'),
+      readFile(resolve(frontendRoot, 'index.html'), 'utf8'),
     ]);
 
     expect(viteConfig).toContain("base: '/ai-writing/'");
@@ -34,6 +35,7 @@ describe('AI写作助手私有部署', () => {
     expect(nginxConfig).toContain('location = /leader-assistant {');
     expect(nginxConfig).toContain('return 302 /ai-writing/;');
     expect(composeConfig).toContain('./frontend-leadership/dist:/usr/share/nginx/html/ai-writing:ro');
+    expect(indexHtml).toContain('<title>AI写作助手</title>');
   });
 
   it('官网源码不含领导文稿助手入口', async () => {
