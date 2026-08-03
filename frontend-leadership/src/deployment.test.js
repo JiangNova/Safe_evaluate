@@ -18,19 +18,22 @@ async function readSourceFiles(directory) {
   return contents.flat();
 }
 
-describe('领导文稿助手私有部署', () => {
+describe('AI写作助手私有部署', () => {
   it('以固定子路径构建，并由 nginx 提供资源、跳转与 SPA 回退', async () => {
-    const [viteConfig, nginxConfig] = await Promise.all([
+    const [viteConfig, nginxConfig, composeConfig] = await Promise.all([
       readFile(resolve(frontendRoot, 'vite.config.js'), 'utf8'),
       readFile(resolve(repositoryRoot, 'nginx.conf'), 'utf8'),
+      readFile(resolve(repositoryRoot, 'docker-compose.yml'), 'utf8'),
     ]);
 
-    expect(viteConfig).toContain("base: '/leader-assistant/'");
+    expect(viteConfig).toContain("base: '/ai-writing/'");
+    expect(nginxConfig).toContain('location = /ai-writing {');
+    expect(nginxConfig).toContain('location ^~ /ai-writing/assets/ {');
+    expect(nginxConfig).toContain('location ^~ /ai-writing/ {');
+    expect(nginxConfig).toContain('try_files $uri $uri/ /ai-writing/index.html;');
     expect(nginxConfig).toContain('location = /leader-assistant {');
-    expect(nginxConfig).toContain('return 302 /leader-assistant/;');
-    expect(nginxConfig).toContain('location ^~ /leader-assistant/assets/ {');
-    expect(nginxConfig).toContain('location ^~ /leader-assistant/ {');
-    expect(nginxConfig).toContain('try_files $uri $uri/ /leader-assistant/index.html;');
+    expect(nginxConfig).toContain('return 302 /ai-writing/;');
+    expect(composeConfig).toContain('./frontend-leadership/dist:/usr/share/nginx/html/ai-writing:ro');
   });
 
   it('官网源码不含领导文稿助手入口', async () => {

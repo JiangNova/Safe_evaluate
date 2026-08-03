@@ -6,7 +6,7 @@ import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter basename="/leader-assistant">
+    <BrowserRouter basename="/ai-writing">
       <App />
     </BrowserRouter>
   </StrictMode>,
