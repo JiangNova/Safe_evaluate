@@ -9,10 +9,12 @@ import tempfile
 from pathlib import Path
 
 from docx import Document
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 
+from .auth import authenticate_leadership_user, verify_token
 from .config import PUBLIC_JOB_MAX_FILES, PUBLIC_JOB_MAX_TOTAL_SIZE
 from .leadership_writer import (
     GeneratedDocument,
@@ -26,6 +28,8 @@ from .models import (
     LeadershipDocxExportRequest,
     LeadershipProfileRequest,
     LeadershipRevisionRequest,
+    LoginRequest,
+    LoginResponse,
 )
 from .public_files import (
     SourceExtractionError,
@@ -37,6 +41,28 @@ from .public_files import (
 
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 router = APIRouter(prefix="/api/leader-assistant", tags=["leadership-assistant"])
+leadership_security = HTTPBearer(auto_error=False)
+
+
+async def require_leadership_auth(
+    credentials: HTTPAuthorizationCredentials | None = Depends(leadership_security),
+) -> dict:
+    """Accept only tokens issued for the leadership writing workbench."""
+    if credentials is None:
+        raise HTTPException(status_code=401, detail="请先登录领导文稿助手")
+    payload = verify_token(credentials.credentials)
+    if payload is None or payload.get("role") != "leader_assistant":
+        raise HTTPException(status_code=401, detail="登录已失效，请重新登录")
+    return payload
+
+
+@router.post("/auth/login", response_model=LoginResponse)
+async def login_leadership_user(req: LoginRequest):
+    """Authenticate one of the small, dedicated leadership-writing accounts."""
+    token = authenticate_leadership_user(req.username, req.password)
+    if token is None:
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    return LoginResponse(token=token, user={"username": req.username, "role": "leader_assistant"})
 
 
 def _api_error(status_code: int, code: str, message: str, *, stage: str) -> HTTPException:
@@ -120,6 +146,7 @@ async def generate_leadership_document(
     task_type: str = Form(...),
     requirement: str = Form(...),
     files: list[UploadFile] | None = File(default=None),
+    _auth: dict = Depends(require_leadership_auth),
 ):
     """Generate one Markdown draft and discard all uploaded reference material."""
     parsed_profile = _to_profile(profile)
@@ -143,7 +170,10 @@ async def generate_leadership_document(
 
 
 @router.post("/revise", response_model=GeneratedDocument)
-async def revise_leadership_document(body: LeadershipRevisionRequest):
+async def revise_leadership_document(
+    body: LeadershipRevisionRequest,
+    _auth: dict = Depends(require_leadership_auth),
+):
     """Revise a browser-supplied draft without retaining it after the response."""
     profile = LeadershipProfile.model_validate(body.profile.model_dump())
     task = WritingTask(task_type=body.task_type, requirement=body.requirement)
@@ -210,6 +240,7 @@ def _remove_file(path: str) -> None:
 async def export_leadership_docx(
     body: LeadershipDocxExportRequest,
     background_tasks: BackgroundTasks,
+    _auth: dict = Depends(require_leadership_auth),
 ):
     """Render browser-local Markdown as a one-off DOCX download."""
     document = Document()
