@@ -74,7 +74,9 @@ init_workspace_db()
 init_workspace_asset_db()
 app.include_router(public_job_router)
 app.include_router(workspace_router)
-app.include_router(leadership_router)
+app.include_router(leadership_router, prefix="/api/ai-writing")
+# Compatibility endpoint for browser tabs opened before the AI-writing rename.
+app.include_router(leadership_router, prefix="/api/leader-assistant")
 
 # CORS
 app.add_middleware(

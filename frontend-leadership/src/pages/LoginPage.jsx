@@ -23,8 +23,8 @@ export default function LoginPage({ onLogin }) {
   return (
     <main className="login-shell">
       <form className="login-panel" onSubmit={submit}>
-        <p className="eyebrow">LEADERSHIP WRITING ASSISTANT</p>
-        <h1>领导文稿助手</h1>
+        <p className="eyebrow">AI WRITING ASSISTANT</p>
+        <h1>AI写作助手</h1>
         <p>请使用已分配的账号登录，进入专属文稿工作区。</p>
         {error && <div role="alert" className="status-message is-error">{error}</div>}
         <label className="field"><span>账号</span><input autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required /></label>

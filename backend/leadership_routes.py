@@ -44,7 +44,7 @@ from .public_files import (
 
 
 DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-router = APIRouter(prefix="/api/leader-assistant", tags=["leadership-assistant"])
+router = APIRouter(tags=["ai-writing"])
 leadership_security = HTTPBearer(auto_error=False)
 
 

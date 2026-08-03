@@ -242,7 +242,7 @@ export default function WorkbenchPage({ accountName, onLogout }) {
   return (
     <main className={`app-shell ${styles.workbench}`}>
       <header className="workbench-header">
-        <div><p className="eyebrow">LEADERSHIP WRITING ASSISTANT</p><h1>领导文稿助手</h1></div>
+        <div><p className="eyebrow">AI WRITING ASSISTANT</p><h1>AI写作助手</h1></div>
         <div className="workbench-account"><p>结合身份档案、工作要求与参考材料，形成可继续编辑的文稿初稿。</p><button type="button" className="secondary-button" onClick={onLogout}>退出登录</button></div>
       </header>
       {(error || notice) && <div role="status" className={`status-message ${error ? 'is-error' : 'is-success'}`}>{error || notice}</div>}

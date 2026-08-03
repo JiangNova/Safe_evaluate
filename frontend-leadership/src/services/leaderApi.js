@@ -22,7 +22,7 @@ export function clearLeadershipSession() {
 }
 
 const client = axios.create({
-  baseURL: '/api/leader-assistant',
+  baseURL: '/api/ai-writing',
   timeout: 300000,
 });
 
@@ -37,7 +37,7 @@ client.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401 && !error?.config?.url?.includes('/auth/login')) {
       clearLeadershipSession();
-      globalThis.location?.assign?.('/leader-assistant/');
+      globalThis.location?.assign?.('/ai-writing/');
     }
     return Promise.reject(error);
   },

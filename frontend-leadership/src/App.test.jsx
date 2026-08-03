@@ -22,6 +22,9 @@ describe('领导文稿助手工作台', () => {
     expect(source).toContain('生成文稿初稿');
     expect(source).toContain('登录');
     expect(source).toContain('退出登录');
+    expect(source).toContain('AI写作助手');
+    expect(source).toContain('AI WRITING ASSISTANT');
+    expect(readFileSync(apiPath, 'utf8')).toContain("baseURL: '/api/ai-writing'");
     expect(readFileSync(apiPath, 'utf8')).toContain('Authorization');
     expect(readFileSync(apiPath, 'utf8')).toContain('clearLeadershipSession');
   });

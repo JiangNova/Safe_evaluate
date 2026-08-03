@@ -12,6 +12,7 @@ from docx.oxml.ns import qn
 from fastapi.testclient import TestClient
 
 from backend.leadership_writer import GeneratedDocument, LeadershipWriterError
+from backend.leadership_routes import DOCX_MEDIA_TYPE
 from backend.main import app
 
 
@@ -20,7 +21,7 @@ client = TestClient(app)
 
 def leadership_token(username: str = "wanxin", password: str = "wanxin") -> str:
     response = client.post(
-        "/api/leader-assistant/auth/login",
+        "/api/ai-writing/auth/login",
         json={"username": username, "password": password},
     )
     assert response.status_code == 200
@@ -52,6 +53,20 @@ def generated_document() -> GeneratedDocument:
 
 
 class LeadershipRouteTests(unittest.TestCase):
+    def test_new_and_legacy_api_prefixes_accept_leadership_login(self):
+        credentials = {"username": "wanxin", "password": "wanxin"}
+        self.assertEqual(client.post("/api/ai-writing/auth/login", json=credentials).status_code, 200)
+        self.assertEqual(client.post("/api/leader-assistant/auth/login", json=credentials).status_code, 200)
+
+    def test_new_api_prefix_exports_docx(self):
+        response = client.post(
+            "/api/ai-writing/export/docx",
+            headers=leadership_headers(),
+            json={"title": "AI写作助手测试文稿", "content_markdown": "正文"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], DOCX_MEDIA_TYPE)
+
     def test_login_accepts_only_configured_leadership_accounts(self):
         for username, password in (("wanxin", "wanxin"), ("wanqin", "wanqin")):
             response = client.post(

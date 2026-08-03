@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: '/leader-assistant/',
+  base: '/ai-writing/',
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom'],
