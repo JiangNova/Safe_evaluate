@@ -231,6 +231,7 @@ website/dist/
 !website/src/lib/**
 safe-evaluate.tar.gz
 update.tar.gz
+ssl/
 debug_ai_response.txt
 backend_stderr.log
 output/playwright/

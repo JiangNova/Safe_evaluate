@@ -6,9 +6,7 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      # 报告数据持久化到宿主机
       - ./backend/data:/app/backend/data
-      # 法规文档（只读）
       - ./requirement:/app/requirement:ro
     environment:
       - APP_ENV=${APP_ENV:-production}
@@ -39,20 +37,19 @@ services:
       timeout: 10s
       retries: 3
 
-  # 可选：直接内置nginx，就不需要额外装
   nginx:
     image: nginx:alpine
     container_name: safe-evaluate-nginx
     restart: always
     ports:
       - "80:80"
-      # - "443:443"   # HTTPS：配置 SSL 证书后取消注释
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./website/dist:/usr/share/nginx/website:ro
       - ./frontend-public/dist:/usr/share/nginx/html/evaluate:ro
       - ./frontend/dist:/usr/share/nginx/html/evaluate_tianxin:ro
       - ./frontend-leadership/dist:/usr/share/nginx/html/ai-writing:ro
-      # - ./ssl:/etc/nginx/ssl:ro   # HTTPS：配置 SSL 证书后取消注释
+      - ./ssl:/etc/nginx/ssl:ro
     depends_on:
       - backend
