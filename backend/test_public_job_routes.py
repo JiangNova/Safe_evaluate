@@ -186,7 +186,9 @@ class PublicJobRouteTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 202, response.text)
+        self.assertEqual(response.json()["status"], "queued")
         execute.assert_awaited_once_with(job_id)
+        self.assertEqual(public_jobs.get_job(job_id)["status"], "queued")
 
 
 if __name__ == "__main__":

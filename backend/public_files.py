@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from docx import Document
+from PIL import Image, ImageOps
 
 from .config import (
     MAX_FILE_SIZE,
@@ -43,6 +44,8 @@ EXPECTED_MIMES = {
 
 MAX_DOCX_ENTRIES = 1000
 MAX_DOCX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024
+EVALUATION_IMAGE_MAX_LONG_EDGE = 2560
+EVALUATION_IMAGE_QUALITY = 90
 
 
 class UploadValidationError(ValueError):
@@ -51,6 +54,45 @@ class UploadValidationError(ValueError):
 
 class SourceExtractionError(RuntimeError):
     """A validated file could not be converted into evaluation sources."""
+
+
+def prepare_evaluation_image(file_record: dict) -> tuple[bytes, str]:
+    """Return a conservative in-memory copy for vision evaluation.
+
+    Originals are always retained on disk. Only directly uploaded JPEG and WebP
+    material images are normalized and downscaled; unsupported formats, small
+    images, and any processing failure use the original bytes unchanged.
+    """
+    original = Path(file_record["storage_path"]).read_bytes()
+    mime_type = file_record["mime_type"]
+    extension = Path(file_record["safe_name"]).suffix.lower()
+    if file_record.get("kind") != "material" or extension not in {".jpg", ".jpeg", ".webp"}:
+        return original, mime_type
+
+    try:
+        with Image.open(io.BytesIO(original)) as source:
+            orientation = source.getexif().get(274, 1)
+            image = ImageOps.exif_transpose(source)
+            if (
+                max(image.size) <= EVALUATION_IMAGE_MAX_LONG_EDGE
+                and orientation in {None, 1}
+            ):
+                return original, mime_type
+
+            image.thumbnail(
+                (EVALUATION_IMAGE_MAX_LONG_EDGE, EVALUATION_IMAGE_MAX_LONG_EDGE),
+                Image.Resampling.LANCZOS,
+            )
+            output = io.BytesIO()
+            if extension in {".jpg", ".jpeg"}:
+                if image.mode not in {"RGB", "L"}:
+                    image = image.convert("RGB")
+                image.save(output, format="JPEG", quality=EVALUATION_IMAGE_QUALITY, optimize=True)
+            else:
+                image.save(output, format="WEBP", quality=EVALUATION_IMAGE_QUALITY, method=4)
+            return output.getvalue(), mime_type
+    except Exception:
+        return original, mime_type
 
 
 @dataclass(frozen=True)

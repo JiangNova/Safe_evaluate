@@ -84,6 +84,17 @@ describe('public evaluation application', () => {
     }
   });
 
+  it('shows distinct public evaluation processing phases', () => {
+    const source = readSource('pages/JobWorkspacePage.jsx');
+
+    for (const value of ['queued', 'preprocessing', 'evaluating', 'mapping']) {
+      expect(source).toContain(value);
+    }
+    for (const label of ['正在排队', '正在优化评估图片', '正在进行视觉评估', '正在生成模板内容']) {
+      expect(source).toContain(label);
+    }
+  });
+
   it.each(['天心区', '公安分局', '派出所', '历史记录', '统计分析', '规则管理'])(
     'does not expose restricted public copy: %s',
     (restrictedText) => {

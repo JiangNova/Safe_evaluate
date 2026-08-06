@@ -1,0 +1,131 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: safe-evaluate-production
+      cancel-in-progress: false
+      queue: max
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Build and test website
+        working-directory: website
+        run: |
+          npm ci
+          npm run lint
+          npm test -- --run
+          npm run build
+
+      - name: Build and test public evaluation frontend
+        working-directory: frontend-public
+        run: |
+          npm ci
+          npm test -- --run
+          npm run build
+
+      - name: Build and test leadership frontend
+        working-directory: frontend-leadership
+        run: |
+          npm ci
+          npm test -- --run
+          npm run build
+
+      - name: Build and test Tianxin frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test -- --run
+          npm run build
+
+      - name: Test deployment safety contract
+        run: bash scripts/test-deploy-production.sh
+
+      - name: Build and validate release archive
+        id: package
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          release_dir="$RUNNER_TEMP/safe-evaluate-release"
+          archive="$release_dir/safe-evaluate-${GITHUB_SHA}.tar.gz"
+          mkdir -p "$release_dir"
+
+          tar -czf "$archive" \
+            backend frontend/dist frontend-public/dist frontend-leadership/dist website/dist \
+            nginx.conf docker-compose.yml
+
+          contents="$release_dir/contents.txt"
+          tar -tzf "$archive" > "$contents"
+          if grep -Eq '(^/|(^|/)\.env(/|$)|(^|/)backend/data(/|$)|(^|/)requirement(/|$)|(^|/)ssl(/|$)|(^|/)\.\.(/|$))' "$contents"; then
+            printf 'Release archive contains a protected or unsafe path.\n' >&2
+            exit 1
+          fi
+
+          printf 'archive=%s\n' "$archive" >> "$GITHUB_OUTPUT"
+
+      - name: Upload and deploy release
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          RELEASE_ARCHIVE: ${{ steps.package.outputs.archive }}
+        run: |
+          set -Eeuo pipefail
+          : "${DEPLOY_HOST:?DEPLOY_HOST is required}"
+          : "${DEPLOY_USER:?DEPLOY_USER is required}"
+          : "${DEPLOY_SSH_KEY:?DEPLOY_SSH_KEY is required}"
+          : "${DEPLOY_KNOWN_HOSTS:?DEPLOY_KNOWN_HOSTS is required}"
+
+          ssh_dir="$(mktemp -d)"
+          cleanup() {
+            rm -rf -- "$ssh_dir"
+          }
+          trap cleanup EXIT
+
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$ssh_dir/id_ed25519"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          chmod 600 "$ssh_dir/id_ed25519"
+          chmod 644 "$ssh_dir/known_hosts"
+
+          port="${DEPLOY_PORT:-22}"
+          remote_archive="/tmp/safe-evaluate-${GITHUB_SHA}.tar.gz"
+          remote_script="/tmp/deploy-production-${GITHUB_SHA}.sh"
+          target="${DEPLOY_USER}@${DEPLOY_HOST}"
+          ssh_options=(
+            -i "$ssh_dir/id_ed25519"
+            -o "UserKnownHostsFile=$ssh_dir/known_hosts"
+            -o GlobalKnownHostsFile=/dev/null
+            -o StrictHostKeyChecking=yes
+            -o IdentitiesOnly=yes
+          )
+
+          scp -P "$port" "${ssh_options[@]}" \
+            "$RELEASE_ARCHIVE" "$target:$remote_archive"
+          scp -P "$port" "${ssh_options[@]}" \
+            scripts/deploy-production.sh "$target:$remote_script"
+          ssh -p "$port" "${ssh_options[@]}" "$target" \
+            "chmod 700 '$remote_script' && DEPLOY_DIR=/opt/safe-evaluate BACKUP_DIR=/opt/safe-evaluate-backups '$remote_script' --archive '$remote_archive' --revision '${GITHUB_SHA}'"

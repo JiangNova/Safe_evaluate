@@ -498,6 +498,7 @@ async def _execute_evaluation(job_id: str) -> None:
             job = public_jobs.get_job(job_id)
             if job is None:
                 return
+            public_jobs.update_job(job_id, status="preprocessing")
             material_files, basis_files, templates = _evaluation_prerequisites(job_id)
             materials = [public_files.extract_source(item) for item in material_files]
             bases = [public_files.extract_source(item) for item in basis_files]
@@ -519,13 +520,17 @@ async def _execute_evaluation(job_id: str) -> None:
                     ".jpeg",
                     ".webp",
                 }:
+                    image_bytes, mime_type = await asyncio.to_thread(
+                        public_files.prepare_evaluation_image, item
+                    )
                     image_inputs.append(
                         (
-                            Path(item["storage_path"]).read_bytes(),
-                            item["mime_type"],
+                            image_bytes,
+                            mime_type,
                             item["original_name"],
                         )
                     )
+            public_jobs.update_job(job_id, status="evaluating")
             result = await evaluate_generic(
                 job["goal"], materials, bases, image_inputs
             )
@@ -639,9 +644,9 @@ async def start_public_job_evaluation(
             "任务已生成评估结果；如需完全重评，请新建匿名任务",
             stage="evaluate",
         )
-    public_jobs.update_job(job_id, status="evaluating", error_json=None)
+    public_jobs.update_job(job_id, status="queued", error_json=None)
     background_tasks.add_task(_execute_evaluation, job_id)
-    return {"job_id": job_id, "status": "evaluating"}
+    return {"job_id": job_id, "status": "queued"}
 
 
 @router.put("/{job_id}/documents/{document_id}/fields")
